@@ -17,7 +17,19 @@ from pathlib import Path
 INPUT_ROOT = Path("/kaggle/input")
 WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v12_routerfix"
-RESULTS = WORKING_ROOT / "colab_results" / "stage3_hotpotqa_seed42_routerfix_limit500_qwen3b"
+
+JOBS = [
+    {
+        "name": "stage3_hotpotqa_seed7_routerfix_limit500_qwen3b",
+        "seed": "7",
+        "limit": "500",
+    },
+    {
+        "name": "stage3_hotpotqa_seed13_routerfix_limit500_qwen3b",
+        "seed": "13",
+        "limit": "500",
+    },
+]
 
 
 def log(message: str) -> None:
@@ -93,46 +105,53 @@ def prepare_project() -> None:
 
 
 def main() -> None:
-    log("=== control/main.py: HotpotQA seed42 limit500 Qwen3B ===")
+    log("=== control/main.py: HotpotQA Qwen3B robustness queue ===")
     prepare_project()
-    RESULTS.mkdir(parents=True, exist_ok=True)
-    run(
-        [
-            sys.executable,
-            "-m",
-            "experiments.run_stage3_router",
-            "--dataset",
-            "hotpotqa",
-            "--split",
-            "validation",
-            "--seed",
-            "42",
-            "--limit",
-            "500",
-            "--embed-device",
-            "cuda",
-            "--compressor",
-            "truncate",
-            "--compress-dims",
-            "320",
-            "--top-k-nodes",
-            "48",
-            "--max-expanded-docs",
-            "5",
-            "--ace-retriever",
-            "standard",
-            "--reader-model",
-            "Qwen/Qwen2.5-3B-Instruct",
-            "--reader-device",
-            "cuda",
-            "--reader-batch-size",
-            "2",
-            "--out-dir",
-            str(RESULTS),
-        ],
-        cwd=WORK_ROOT,
-        timeout=21600,
-    )
+    for job in JOBS:
+        out_dir = WORKING_ROOT / "colab_results" / job["name"]
+        if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
+            log(f"[skip] {job['name']} already has metrics")
+            continue
+        out_dir.mkdir(parents=True, exist_ok=True)
+        log(f"[start] {job['name']}")
+        run(
+            [
+                sys.executable,
+                "-m",
+                "experiments.run_stage3_router",
+                "--dataset",
+                "hotpotqa",
+                "--split",
+                "validation",
+                "--seed",
+                job["seed"],
+                "--limit",
+                job["limit"],
+                "--embed-device",
+                "cuda",
+                "--compressor",
+                "truncate",
+                "--compress-dims",
+                "320",
+                "--top-k-nodes",
+                "48",
+                "--max-expanded-docs",
+                "5",
+                "--ace-retriever",
+                "standard",
+                "--reader-model",
+                "Qwen/Qwen2.5-3B-Instruct",
+                "--reader-device",
+                "cuda",
+                "--reader-batch-size",
+                "2",
+                "--out-dir",
+                str(out_dir),
+            ],
+            cwd=WORK_ROOT,
+            timeout=21600,
+        )
+        log(f"[done] {job['name']}")
     log("=== control/main.py done ===")
 
 
