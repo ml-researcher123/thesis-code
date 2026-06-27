@@ -20,9 +20,9 @@ WORK_ROOT = WORKING_ROOT / "ace_rag_research_v12_routerfix"
 
 JOBS = [
     {
-        "name": "stage3_hotpotqa_seed13_routerfix_limit1000_qwen3b",
-        "seed": "13",
-        "limit": "1000",
+        "name": "stage3_musique_bridge_routerfix_limit200_qwen3b",
+        "dataset": "musique_local",
+        "limit": "200",
     },
 ]
 
@@ -83,6 +83,35 @@ def find_extracted_project() -> Path | None:
     return candidates[0]
 
 
+def find_musique_jsonl() -> Path | None:
+    direct = sorted(INPUT_ROOT.rglob("musique.jsonl"), key=lambda path: len(str(path)))
+    if direct:
+        return direct[0]
+
+    data_root = WORKING_ROOT / "data" / "raw"
+    data_root.mkdir(parents=True, exist_ok=True)
+    zip_candidates = sorted(
+        [path for path in INPUT_ROOT.rglob("*.zip") if "musique" in path.name.lower()],
+        key=lambda path: len(str(path)),
+    )
+    for zip_path in zip_candidates:
+        with zipfile.ZipFile(zip_path) as zf:
+            jsonl_names = [
+                name
+                for name in zf.namelist()
+                if name.endswith(".jsonl") and ("dev" in name.lower() or "musique" in name.lower())
+            ]
+            if not jsonl_names:
+                continue
+            preferred = sorted(jsonl_names, key=lambda name: (0 if "dev" in name.lower() else 1, len(name)))[0]
+            out_path = data_root / "musique.jsonl"
+            with zf.open(preferred) as src, out_path.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+            log(f"Extracted MuSiQue {preferred} from {zip_path} to {out_path}")
+            return out_path
+    return None
+
+
 def prepare_project() -> None:
     if WORK_ROOT.exists():
         shutil.rmtree(WORK_ROOT)
@@ -100,12 +129,16 @@ def prepare_project() -> None:
 
 
 def main() -> None:
-    log("=== control/main.py: HotpotQA Qwen3B limit1000 scaling run ===")
+    log("=== control/main.py: MuSiQue Qwen3B conditional run ===")
     prepare_project()
     for job in JOBS:
         out_dir = WORKING_ROOT / "colab_results" / job["name"]
         if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
             log(f"[skip] {job['name']} already has metrics")
+            continue
+        musique_path = find_musique_jsonl()
+        if musique_path is None:
+            log("[skip] MuSiQue dataset not found in Kaggle input. Add musique.jsonl or a MuSiQue zip to run this job.")
             continue
         out_dir.mkdir(parents=True, exist_ok=True)
         log(f"[start] {job['name']}")
@@ -115,11 +148,9 @@ def main() -> None:
                 "-m",
                 "experiments.run_stage3_router",
                 "--dataset",
-                "hotpotqa",
-                "--split",
-                "validation",
-                "--seed",
-                job["seed"],
+                "musique_local",
+                "--musique-path",
+                str(musique_path),
                 "--limit",
                 job["limit"],
                 "--embed-device",
@@ -133,7 +164,7 @@ def main() -> None:
                 "--max-expanded-docs",
                 "5",
                 "--ace-retriever",
-                "standard",
+                "bridge",
                 "--reader-model",
                 "Qwen/Qwen2.5-3B-Instruct",
                 "--reader-device",
