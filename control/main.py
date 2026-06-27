@@ -20,14 +20,14 @@ WORK_ROOT = WORKING_ROOT / "ace_rag_research_v12_routerfix"
 
 JOBS = [
     {
-        "name": "stage3_hotpotqa_budget80_seed42_limit1000_qwen3b",
-        "seed": "42",
+        "name": "stage3_hotpotqa_budget80_seed7_limit1000_qwen3b",
+        "seed": "7",
         "limit": "1000",
         "budget": "80",
     },
     {
-        "name": "stage3_hotpotqa_budget120_seed42_limit1000_qwen3b",
-        "seed": "42",
+        "name": "stage3_hotpotqa_budget120_seed7_limit1000_qwen3b",
+        "seed": "7",
         "limit": "1000",
         "budget": "120",
     },
