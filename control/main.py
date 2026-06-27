@@ -18,7 +18,8 @@ INPUT_ROOT = Path("/kaggle/input")
 WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 
-RAGBENCH_SUBSETS = ["pubmedqa", "covidqa", "expertqa", "emanual", "techqa"]
+JOB_VERSION = "stage3-cross-ragbench-covidqa-v1"
+RAGBENCH_SUBSETS = ["covidqa", "expertqa", "emanual", "techqa", "pubmedqa"]
 
 
 def log(message: str) -> None:
@@ -215,7 +216,7 @@ def run_ragbench_fallback() -> bool:
         out_dir = WORKING_ROOT / "colab_results" / job_name
         if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
             log(f"[skip] {job_name} already has metrics")
-            return True
+            continue
         out_dir.mkdir(parents=True, exist_ok=True)
         cmd = stage3_base_args(out_dir, "160")
         cmd.extend(
@@ -240,7 +241,7 @@ def run_ragbench_fallback() -> bool:
 
 
 def main() -> None:
-    log("=== control/main.py: cross-dataset validation ===")
+    log(f"=== control/main.py: cross-dataset validation ({JOB_VERSION}) ===")
     prepare_project()
     ensure_ragbench_stage3_support()
     if run_musique_if_available():
