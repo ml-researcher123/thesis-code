@@ -61,14 +61,34 @@ def find_project_zip() -> Path:
     return candidates[0]
 
 
+def find_extracted_project() -> Path | None:
+    candidates = sorted(
+        [
+            path.parent
+            for path in INPUT_ROOT.rglob("requirements-cloud.txt")
+            if (path.parent / "experiments" / "run_stage3_router.py").exists()
+            and (path.parent / "ace_rag").exists()
+        ],
+        key=lambda path: (0 if "dataset12" in str(path) else 1, len(str(path))),
+    )
+    if not candidates:
+        return None
+    return candidates[0]
+
+
 def prepare_project() -> None:
-    project_zip = find_project_zip()
     if WORK_ROOT.exists():
         shutil.rmtree(WORK_ROOT)
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(project_zip) as zf:
-        zf.extractall(WORK_ROOT)
-    log(f"Extracted {project_zip} to {WORK_ROOT}")
+    extracted_project = find_extracted_project()
+    if extracted_project is not None:
+        shutil.copytree(extracted_project, WORK_ROOT, dirs_exist_ok=True)
+        log(f"Copied extracted project {extracted_project} to {WORK_ROOT}")
+    else:
+        project_zip = find_project_zip()
+        with zipfile.ZipFile(project_zip) as zf:
+            zf.extractall(WORK_ROOT)
+        log(f"Extracted {project_zip} to {WORK_ROOT}")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements-cloud.txt"], cwd=WORK_ROOT, timeout=900)
 
 
