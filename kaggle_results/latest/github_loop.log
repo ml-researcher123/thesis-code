@@ -1,0 +1,10 @@
+=== Kaggle GitHub loop started ===
+$ git ...
+[bootstrap] copied loose control script /kaggle/input/datasets/anantonayan/idkssss/main.py to /kaggle/working/github_control_repo/control/main.py
+$ git config user.email kaggle-runner@example.local
+$ git config user.name kaggle-runner
+$ git add control README_GITHUB_KAGGLE_LOOP.md
+$ git commit -m Bootstrap Kaggle control job
+$ git push -u origin main
+[bootstrap] pushed initial control job to https://github.com/ml-researcher123/thesis-code/tree/main/control
+[start] running /kaggle/working/github_control_repo/control/main.py hash=322194d92fd8b33afddcea3f8e623a956d0d19491613d5df18d5a518226af4cf

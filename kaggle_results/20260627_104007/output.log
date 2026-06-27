@@ -1,0 +1,12 @@
+=== control/main.py: HotpotQA seed42 limit500 Qwen3B ===
+Traceback (most recent call last):
+  File "/kaggle/working/github_control_repo/control/main.py", line 120, in <module>
+    main()
+  File "/kaggle/working/github_control_repo/control/main.py", line 77, in main
+    prepare_project()
+  File "/kaggle/working/github_control_repo/control/main.py", line 65, in prepare_project
+    project_zip = find_project_zip()
+                  ^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/github_control_repo/control/main.py", line 60, in find_project_zip
+    raise FileNotFoundError("Upload ace_rag_research_kaggle_ready_v12_routerfix.zip as a Kaggle input dataset.")
+FileNotFoundError: Upload ace_rag_research_kaggle_ready_v12_routerfix.zip as a Kaggle input dataset.
