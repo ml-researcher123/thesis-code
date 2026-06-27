@@ -20,14 +20,9 @@ WORK_ROOT = WORKING_ROOT / "ace_rag_research_v12_routerfix"
 
 JOBS = [
     {
-        "name": "stage3_hotpotqa_seed7_routerfix_limit500_qwen3b",
-        "seed": "7",
-        "limit": "500",
-    },
-    {
-        "name": "stage3_hotpotqa_seed13_routerfix_limit500_qwen3b",
-        "seed": "13",
-        "limit": "500",
+        "name": "stage3_hotpotqa_seed42_routerfix_limit1000_qwen3b",
+        "seed": "42",
+        "limit": "1000",
     },
 ]
 
@@ -105,7 +100,7 @@ def prepare_project() -> None:
 
 
 def main() -> None:
-    log("=== control/main.py: HotpotQA Qwen3B robustness queue ===")
+    log("=== control/main.py: HotpotQA Qwen3B limit1000 scaling run ===")
     prepare_project()
     for job in JOBS:
         out_dir = WORKING_ROOT / "colab_results" / job["name"]
