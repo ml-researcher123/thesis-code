@@ -28,12 +28,16 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage4b-mmr-multiseed-hotpotqa-v1"
+JOB_VERSION = "stage5-crossdataset-packer-v1"
 
-# Multi-seed robustness for the headline result (chunk_submod beats heuristic
-# packers) plus the MMR baseline the factorial was missing. Seed 42 is re-run so
-# every seed has the full 2x3 {chunk,ace} x {focused,mmr,submod} table.
-SEEDS = [42, 13, 7]
+# Cross-dataset generality of the packer win. HotpotQA established (3 seeds, MMR
+# control) that chunk_submod > {focused, mmr, packed}. Now test whether that
+# transfers under domain shift on RAGBench. CovidQA was the cleanest ACE transfer
+# previously; ExpertQA a smaller positive. The decisive question is F1/EM, since
+# RAGBench marks every context gold (density metrics saturate).
+RAGBENCH_SUBSETS = ["covidqa", "expertqa"]
+RAGBENCH_SPLIT = "test"
+RAGBENCH_LIMIT = 300
 
 
 def log(message: str) -> None:
@@ -125,8 +129,8 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_density_hotpotqa(seed: int) -> bool:
-    job_name = f"stage4b_density_mmr_hotpotqa_seed{seed}_budget160_limit500_qwen3b"
+def run_density_ragbench(subset: str) -> bool:
+    job_name = f"stage5_density_packer_ragbench_{subset}_budget160_limit{RAGBENCH_LIMIT}_qwen3b"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
@@ -137,13 +141,13 @@ def run_density_hotpotqa(seed: int) -> bool:
         "-m",
         "experiments.run_density_router",
         "--dataset",
-        "hotpotqa",
+        "ragbench",
+        "--ragbench-subset",
+        subset,
         "--split",
-        "validation",
-        "--seed",
-        str(seed),
+        RAGBENCH_SPLIT,
         "--limit",
-        "500",
+        str(RAGBENCH_LIMIT),
         "--embedder",
         "sentence-transformers",
         "--embedding-model",
@@ -179,16 +183,20 @@ def run_density_hotpotqa(seed: int) -> bool:
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-4b MMR + multi-seed density packing ({JOB_VERSION}) ===")
+    log(f"=== control/main.py: Stage-5 cross-dataset packer factorial ({JOB_VERSION}) ===")
     prepare_project()
     apply_overlay()
-    results: dict[int, bool] = {}
-    for seed in SEEDS:
-        log(f"--- seed {seed} ---")
-        results[seed] = run_density_hotpotqa(seed)
+    results: dict[str, bool] = {}
+    for subset in RAGBENCH_SUBSETS:
+        log(f"--- ragbench:{subset} ---")
+        try:
+            results[subset] = run_density_ragbench(subset)
+        except Exception as exc:  # keep going to the next subset on a dataset error
+            log(f"[error] ragbench:{subset} raised {exc!r}")
+            results[subset] = False
     ok = [s for s, good in results.items() if good]
     bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage4b mmr multiseed; ok={ok} failed={bad} ===")
+    log(f"=== control/main.py done: stage5 cross-dataset; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
