@@ -313,6 +313,118 @@ def _objective_value(
     return w_rel * rel + w_query * q + w_cover * cov + w_div * div
 
 
+def mmr_select(
+    candidates: list[SnippetCandidate],
+    token_budget: int,
+    max_snippets: int = 8,
+    lam: float = 0.7,
+) -> list[SnippetCandidate]:
+    """Maximal Marginal Relevance selection (Carbonell & Goldstein 1998).
+
+    The canonical redundancy-aware reranker and the natural baseline for the
+    submodular packer: at each step pick the candidate maximizing
+    ``lam * rel(i) - (1 - lam) * max_{j in S} sim(i, j)`` under the token budget.
+    Relevance is min-max normalized so it is comparable to the [0, 1] cosine
+    redundancy term. Candidates are identical to those the submodular and focused
+    packers see, so MMR-vs-submod isolates the *selection rule*.
+    """
+
+    n = len(candidates)
+    if n == 0:
+        return []
+    rels = [c.relevance for c in candidates]
+    lo, hi = min(rels), max(rels)
+    span = (hi - lo) or 1.0
+    norm_rel = [(r - lo) / span for r in rels]
+
+    sim_cache: dict[tuple[int, int], float] = {}
+
+    def sim(i: int, j: int) -> float:
+        key = (i, j) if i < j else (j, i)
+        cached = sim_cache.get(key)
+        if cached is None:
+            cached = cosine_from_counters(candidates[i].counter, candidates[j].counter)
+            sim_cache[key] = cached
+        return cached
+
+    selected: list[int] = []
+    selected_set: set[int] = set()
+    used = 0
+    while len(selected) < max_snippets:
+        best_idx = -1
+        best_score = -1e18
+        for i in range(n):
+            if i in selected_set:
+                continue
+            if selected and used + candidates[i].tokens > token_budget:
+                continue
+            redundancy = max((sim(i, j) for j in selected_set), default=0.0)
+            score = lam * norm_rel[i] - (1.0 - lam) * redundancy
+            if score > best_score:
+                best_score = score
+                best_idx = i
+        if best_idx < 0:
+            break
+        selected.append(best_idx)
+        selected_set.add(best_idx)
+        used += candidates[best_idx].tokens
+        if used >= token_budget:
+            break
+    return [candidates[i] for i in selected]
+
+
+def _hits_from_candidates(chosen: list[SnippetCandidate], tag: str) -> list[RetrievalHit]:
+    hits: list[RetrievalHit] = []
+    for i, cand in enumerate(chosen):
+        hits.append(
+            RetrievalHit(
+                node_id=f"reader_{tag}::{cand.doc_id}::{i}",
+                node_type=f"{tag}_snippet",
+                text=cand.text,
+                score=float(cand.relevance),
+                source_doc_id=cand.doc_id,
+                expanded_doc_ids=[cand.doc_id],
+                metadata={"title": cand.title},
+            )
+        )
+    return hits
+
+
+def pack_mmr_run(
+    dataset: CorpusDataset,
+    run: RetrievalRun,
+    snippet_window: int = 1,
+    max_snippets: int = 8,
+    max_snippet_tokens: int = 80,
+    token_budget: int = 160,
+    mmr_lambda: float = 0.7,
+    max_candidates: int = 160,
+) -> RetrievalRun:
+    """Materialize a reader context for ``run`` using MMR evidence packing."""
+
+    candidates = build_candidates(
+        dataset,
+        run,
+        snippet_window=snippet_window,
+        max_snippet_tokens=max_snippet_tokens,
+        max_candidates=max_candidates,
+    )
+    chosen = mmr_select(candidates, token_budget=token_budget, max_snippets=max_snippets, lam=mmr_lambda)
+    hits = _hits_from_candidates(chosen, "mmr")
+    return RetrievalRun(
+        qid=run.qid,
+        query=run.query,
+        hits=hits,
+        retrieved_doc_ids=list(dict.fromkeys(h.source_doc_id or "" for h in hits if h.source_doc_id)),
+        diagnostics={
+            **run.diagnostics,
+            "reader_context": "mmr_packed",
+            "packed_token_budget": token_budget,
+            "mmr_lambda": mmr_lambda,
+        },
+    )
+
+
 def pack_submodular_run(
     dataset: CorpusDataset,
     run: RetrievalRun,
@@ -349,19 +461,7 @@ def pack_submodular_run(
         sat_alpha=sat_alpha,
         cost_power=cost_power,
     )
-    hits: list[RetrievalHit] = []
-    for i, cand in enumerate(chosen):
-        hits.append(
-            RetrievalHit(
-                node_id=f"reader_submod::{cand.doc_id}::{i}",
-                node_type="submodular_snippet",
-                text=cand.text,
-                score=float(cand.relevance),
-                source_doc_id=cand.doc_id,
-                expanded_doc_ids=[cand.doc_id],
-                metadata={"title": cand.title},
-            )
-        )
+    hits = _hits_from_candidates(chosen, "submod")
     return RetrievalRun(
         qid=run.qid,
         query=run.query,

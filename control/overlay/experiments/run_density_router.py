@@ -30,7 +30,7 @@ from typing import Any
 
 from ace_rag.context_quality import aggregate_context_quality, context_quality
 from ace_rag.datasets import load_dataset
-from ace_rag.evidence_packer import pack_submodular_run
+from ace_rag.evidence_packer import pack_mmr_run, pack_submodular_run
 from ace_rag.generator import ExtractiveGenerator, HuggingFaceGenerator
 from ace_rag.metrics import (
     all_gold_retrieved_at_k,
@@ -80,6 +80,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-snippets", type=int, default=8)
     parser.add_argument("--max-snippet-tokens", type=int, default=80)
     parser.add_argument("--budget", type=int, default=160, help="Shared reader token budget for the 2x2 factorial.")
+    parser.add_argument("--mmr-lambda", type=float, default=0.7, help="MMR relevance/redundancy trade-off.")
     parser.add_argument("--submod-w-rel", type=float, default=1.0)
     parser.add_argument("--submod-w-query", type=float, default=0.5)
     parser.add_argument("--submod-w-cover", type=float, default=0.4)
@@ -132,8 +133,10 @@ def build_policies(args: argparse.Namespace) -> list[dict[str, Any]]:
     return [
         {"name": f"chunk_packed_{b}", "base": "chunk", "representation": "chunk", "packer": "packed", "mode": "packed_snippets"},
         {"name": f"chunk_focused_{b}", "base": "chunk", "representation": "chunk", "packer": "focused", "mode": "focused_packed"},
+        {"name": f"chunk_mmr_{b}", "base": "chunk", "representation": "chunk", "packer": "mmr", "mode": "mmr"},
         {"name": f"chunk_submod_{b}", "base": "chunk", "representation": "chunk", "packer": "submod", "mode": "submodular"},
         {"name": f"{ace_prefix}_focused_{b}", "base": "ace", "representation": "ace", "packer": "focused", "mode": "focused_packed"},
+        {"name": f"{ace_prefix}_mmr_{b}", "base": "ace", "representation": "ace", "packer": "mmr", "mode": "mmr"},
         {"name": f"{ace_prefix}_submod_{b}", "base": "ace", "representation": "ace", "packer": "submod", "mode": "submodular"},
     ]
 
@@ -156,6 +159,20 @@ def materialize_policy(
                 w_div=args.submod_w_div,
                 sat_alpha=args.submod_sat_alpha,
                 cost_power=args.submod_cost_power,
+                max_candidates=args.submod_max_candidates,
+            )
+            for run in base_runs
+        ]
+    if policy["mode"] == "mmr":
+        return [
+            pack_mmr_run(
+                dataset,
+                run,
+                snippet_window=args.snippet_window,
+                max_snippets=args.max_snippets,
+                max_snippet_tokens=args.max_snippet_tokens,
+                token_budget=args.budget,
+                mmr_lambda=args.mmr_lambda,
                 max_candidates=args.submod_max_candidates,
             )
             for run in base_runs

@@ -28,7 +28,12 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage4-density-submodular-hotpotqa-v1"
+JOB_VERSION = "stage4b-mmr-multiseed-hotpotqa-v1"
+
+# Multi-seed robustness for the headline result (chunk_submod beats heuristic
+# packers) plus the MMR baseline the factorial was missing. Seed 42 is re-run so
+# every seed has the full 2x3 {chunk,ace} x {focused,mmr,submod} table.
+SEEDS = [42, 13, 7]
 
 
 def log(message: str) -> None:
@@ -120,8 +125,8 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_density_hotpotqa() -> bool:
-    job_name = "stage4_density_hotpotqa_seed42_budget160_limit500_qwen3b"
+def run_density_hotpotqa(seed: int) -> bool:
+    job_name = f"stage4b_density_mmr_hotpotqa_seed{seed}_budget160_limit500_qwen3b"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
@@ -136,7 +141,7 @@ def run_density_hotpotqa() -> bool:
         "--split",
         "validation",
         "--seed",
-        "42",
+        str(seed),
         "--limit",
         "500",
         "--embedder",
@@ -165,20 +170,25 @@ def run_density_hotpotqa() -> bool:
         "2",
         "--budget",
         "160",
+        "--mmr-lambda",
+        "0.7",
         "--out-dir",
         str(out_dir),
     ]
-    return run(cmd, cwd=WORK_ROOT, timeout=21600, check=False) == 0
+    return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-4 density + submodular packing ({JOB_VERSION}) ===")
+    log(f"=== control/main.py: Stage-4b MMR + multi-seed density packing ({JOB_VERSION}) ===")
     prepare_project()
     apply_overlay()
-    if run_density_hotpotqa():
-        log("=== control/main.py done: stage4 density hotpotqa ===")
-    else:
-        log("=== control/main.py finished with errors: stage4 density hotpotqa ===")
+    results: dict[int, bool] = {}
+    for seed in SEEDS:
+        log(f"--- seed {seed} ---")
+        results[seed] = run_density_hotpotqa(seed)
+    ok = [s for s, good in results.items() if good]
+    bad = [s for s, good in results.items() if not good]
+    log(f"=== control/main.py done: stage4b mmr multiseed; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
