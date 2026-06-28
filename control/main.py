@@ -18,8 +18,8 @@ INPUT_ROOT = Path("/kaggle/input")
 WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 
-JOB_VERSION = "stage3-cross-ragbench-expertqa-v1"
-RAGBENCH_SUBSETS = ["expertqa", "emanual", "techqa", "covidqa", "pubmedqa"]
+JOB_VERSION = "stage3-cross-ragbench-emanual-v1"
+RAGBENCH_SUBSETS = ["emanual", "techqa", "expertqa", "covidqa", "pubmedqa"]
 
 
 def log(message: str) -> None:
