@@ -1,4 +1,4 @@
-"""Current Kaggle control job: Stage-9 larger-reader scaling test (Run A).
+"""Current Kaggle control job: Stage-10a 2WikiMultiHopQA retrieval gate (Run B prereq).
 
 This file lives in the GitHub repo under control/main.py. Kaggle's github loop
 runs it whenever this file changes.
@@ -7,10 +7,18 @@ Design note (how new methodology reaches Kaggle):
   The Kaggle reader does NOT run code straight from GitHub. It extracts a frozen
   project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) that was uploaded
   as a Kaggle input. To ship *new* code (the submodular packer, the density
-  diagnostics, the Stage-4 runner, and now the device_map/4-bit reader loader)
-  without re-uploading a zip, this control script OVERLAYS the files under
-  control/overlay/ (shipped alongside this file in the GitHub repo) onto the
-  extracted project before running. The overlay is additive.
+  diagnostics, the Stage-4 runner, the device_map reader loader, and now the
+  2WikiMultiHopQA loader + retrieval-only gate) without re-uploading a zip, this
+  control script OVERLAYS the files under control/overlay/ (shipped alongside
+  this file in the GitHub repo) onto the extracted project before running.
+
+Stage-10a is a CHEAP PREREQUISITE GATE for Run B (a second positive multi-hop
+dataset). Before paying for a full 2x3 factorial + 3B reader on 2Wiki, we run
+ONLY retrieval and measure whether the gold evidence is actually surfaced. The
+packer cannot assemble evidence retrieval never returned -- this is exactly the
+condition MuSiQue failed (all_gold@5=0.184 -> packer null). If 2Wiki clears the
+bar, a follow-up job runs the full factorial; if not, 2Wiki joins the scope map
+as another retrieval-bottlenecked boundary. No reader is loaded in this job.
 """
 
 from __future__ import annotations
@@ -28,27 +36,18 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage9-hotpotqa-reader7b-v1"
+JOB_VERSION = "stage10a-2wiki-retrieval-gate-v1"
 
-# Stage-9 (Run A): does the HotpotQA packer win survive a larger reader?
-# The headline result (Stage-4b) used Qwen2.5-3B. The most dangerous reviewer
-# objection is "a stronger reader just absorbs the redundancy your packer
-# removes, so this is irrelevant at scale." This job re-runs the *exact* HotpotQA
-# 2x3 factorial (same data, retrieval, budget) changing only the reader to
-# Qwen2.5-7B-Instruct, sharded across the 2xT4 box via device_map="auto" (7B in
-# fp16 does not fit one 15GB T4). The only changed variable is reader size.
-#   - Win holds        => robustness; strong paper strengthener.
-#   - Win shrinks (+ve) => reframe as "packing matters most for small readers".
-#   - Win vanishes      => honest scaling limitation; the diagnostic still holds.
-# Retrieval knobs match Stage-4b HotpotQA exactly (top-k 5 / nodes 48 / expand 5)
-# so chunk_submod-vs-chunk_focused is directly comparable across reader sizes.
-READER_MODEL = "Qwen/Qwen2.5-7B-Instruct"
-HOTPOT_BUDGET = 160
-HOTPOT_LIMIT = 500
-HOTPOT_SEEDS = [42, 13]
-HOTPOT_TOP_K = 5
-HOTPOT_TOP_K_NODES = 48
-HOTPOT_MAX_EXPANDED = 5
+# Retrieval settings match HotpotQA Stage-4b exactly so all_gold@5 is directly
+# comparable across datasets (HotpotQA ~0.76 -> packer wins; MuSiQue 0.184 ->
+# packer null). Decision is made OFFLINE after reading chunk all_gold@5:
+#   >~ 0.40  -> retrieval surfaces multi-hop evidence; run the full Run B factorial.
+#   ~  0.18  -> MuSiQue-like bottleneck; abort Run B, fold 2Wiki into the scope map.
+TWO_WIKI_LIMIT = 500
+TWO_WIKI_SEED = 42
+TWO_WIKI_TOP_K = 5
+TWO_WIKI_TOP_K_NODES = 48
+TWO_WIKI_MAX_EXPANDED = 5
 
 
 def log(message: str) -> None:
@@ -108,6 +107,32 @@ def find_extracted_project() -> Path | None:
     return candidates[0]
 
 
+def find_2wiki_file() -> Path:
+    """Locate a mounted 2WikiMultiHopQA dev split (.json/.jsonl) under /kaggle/input.
+
+    2Wiki releases name the dev split variously (dev.json inside a 2wiki folder,
+    2wiki_dev.json, 2wikimultihopqa_dev.jsonl, ...). We match on a 2wiki/wikimultihop
+    token in the path plus a dev/valid token, preferring the shortest path.
+    """
+    cands: list[Path] = []
+    for path in INPUT_ROOT.rglob("*.json*"):
+        if not path.is_file() or path.suffix.lower() not in (".json", ".jsonl"):
+            continue
+        sp = str(path).lower()
+        has_2wiki = ("2wiki" in sp) or ("wikimultihop" in sp) or ("2_wiki" in sp)
+        has_split = ("dev" in sp) or ("valid" in sp)
+        if has_2wiki and has_split:
+            cands.append(path)
+    cands = sorted(set(cands), key=lambda p: (len(str(p)), str(p)))
+    if not cands:
+        raise FileNotFoundError(
+            "No 2WikiMultiHopQA dev file found. Mount the 2Wiki dev split (.json/.jsonl) "
+            "as a Kaggle input; the path must contain '2wiki'/'wikimultihop' and 'dev'/'valid'."
+        )
+    log(f"[2wiki] using {cands[0]}  ({len(cands)} candidate(s))")
+    return cands[0]
+
+
 def prepare_project() -> None:
     if WORK_ROOT.exists():
         shutil.rmtree(WORK_ROOT)
@@ -140,56 +165,44 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_density_hotpot_7b(seed: int) -> bool:
-    job_name = f"stage9_density_packer_hotpotqa_reader7b_budget{HOTPOT_BUDGET}_limit{HOTPOT_LIMIT}_seed{seed}"
+def run_2wiki_gate(twowiki_file: Path) -> bool:
+    job_name = f"stage10a_2wiki_retrieval_gate_limit{TWO_WIKI_LIMIT}_seed{TWO_WIKI_SEED}"
     out_dir = WORKING_ROOT / "colab_results" / job_name
-    if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
-        log(f"[skip] {job_name} already has metrics")
+    if out_dir.exists() and any(out_dir.glob("*retrieval_gate*.csv")):
+        log(f"[skip] {job_name} already has a gate CSV")
         return True
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "experiments.run_density_router",
-        "--dataset", "hotpotqa",
-        "--split", "validation",
-        "--limit", str(HOTPOT_LIMIT),
-        "--seed", str(seed),
+        "--dataset", "2wiki_local",
+        "--twowiki-path", str(twowiki_file),
+        "--retrieval-only",
+        "--limit", str(TWO_WIKI_LIMIT),
+        "--seed", str(TWO_WIKI_SEED),
         "--ace-retriever", "standard",
-        "--top-k", str(HOTPOT_TOP_K),
-        "--top-k-nodes", str(HOTPOT_TOP_K_NODES),
-        "--max-expanded-docs", str(HOTPOT_MAX_EXPANDED),
+        "--top-k", str(TWO_WIKI_TOP_K),
+        "--top-k-nodes", str(TWO_WIKI_TOP_K_NODES),
+        "--max-expanded-docs", str(TWO_WIKI_MAX_EXPANDED),
         "--embedder", "sentence-transformers",
         "--embedding-model", "BAAI/bge-small-en-v1.5",
         "--embed-device", "cuda",
         "--compressor", "truncate",
         "--compress-dims", "320",
-        "--reader-backend", "hf",
-        "--reader-model", READER_MODEL,
-        "--reader-device", "cuda",
-        "--reader-device-map", "auto",   # shard 7B across the 2xT4 box
-        "--reader-batch-size", "2",
-        "--mmr-lambda", "0.7",
-        "--budget", str(HOTPOT_BUDGET),
         "--out-dir", str(out_dir),
     ]
-    return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
+    return run(cmd, cwd=WORK_ROOT, timeout=3600, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-9 HotpotQA larger-reader scaling test ({JOB_VERSION}) ===")
-    log(f"--- reader={READER_MODEL} budget={HOTPOT_BUDGET} limit={HOTPOT_LIMIT} seeds={HOTPOT_SEEDS} ---")
+    log(f"=== control/main.py: Stage-10a 2Wiki retrieval gate ({JOB_VERSION}) ===")
+    log(f"--- limit={TWO_WIKI_LIMIT} seed={TWO_WIKI_SEED} top-k={TWO_WIKI_TOP_K} "
+        f"nodes={TWO_WIKI_TOP_K_NODES} expand={TWO_WIKI_MAX_EXPANDED} (no reader) ---")
     prepare_project()
     apply_overlay()
-    results: dict[str, bool] = {}
-    for seed in HOTPOT_SEEDS:
-        log(f"--- hotpotqa 7B seed {seed} ---")
-        try:
-            results[f"hotpot_seed{seed}"] = run_density_hotpot_7b(seed)
-        except Exception as exc:
-            log(f"[error] hotpotqa 7B seed {seed} raised {exc!r}")
-            results[f"hotpot_seed{seed}"] = False
-    ok = [s for s, good in results.items() if good]
-    bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage9 hotpotqa reader7b; ok={ok} failed={bad} ===")
+    twowiki_file = find_2wiki_file()
+    ok = run_2wiki_gate(twowiki_file)
+    log(f"=== control/main.py done: stage10a 2wiki retrieval gate; ok={ok} ===")
+    log("Read chunk all_gold@5 from the gate CSV / [gate] log line to decide on the full Run B factorial.")
 
 
 if __name__ == "__main__":

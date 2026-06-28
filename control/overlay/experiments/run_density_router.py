@@ -51,12 +51,16 @@ from experiments.run_qwen_eval import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", default="hotpotqa", choices=["toy", "hotpotqa", "musique_local", "ragbench"])
+    parser.add_argument("--dataset", default="hotpotqa", choices=["toy", "hotpotqa", "musique_local", "2wiki_local", "ragbench"])
     parser.add_argument("--split", default="validation")
     parser.add_argument("--ragbench-subset", default=None)
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--musique-path", default=None)
+    parser.add_argument("--twowiki-path", default=None)
+    parser.add_argument("--retrieval-only", action="store_true",
+                        help="Run only chunk+ACE retrieval, report recall@5/all_gold@5, and exit before "
+                             "loading the reader. A cheap prerequisite gate for a new dataset.")
     parser.add_argument("--embedder", default="sentence-transformers", choices=["lexical", "sentence-transformers"])
     parser.add_argument("--embedding-model", default="BAAI/bge-small-en-v1.5")
     parser.add_argument("--embed-device", default="cuda")
@@ -126,6 +130,10 @@ def load_from_args(args: argparse.Namespace) -> CorpusDataset:
         if not args.musique_path:
             raise SystemExit("--musique-path is required for musique_local")
         return load_dataset("musique_local", path=args.musique_path, limit=args.limit)
+    if args.dataset == "2wiki_local":
+        if not args.twowiki_path:
+            raise SystemExit("--twowiki-path is required for 2wiki_local")
+        return load_dataset("2wiki_local", path=args.twowiki_path, limit=args.limit, seed=args.seed)
     if args.dataset == "ragbench":
         return load_dataset("ragbench", split=args.split, subset=args.ragbench_subset, limit=args.limit)
     return load_dataset("hotpotqa", split=args.split, limit=args.limit, seed=args.seed)
@@ -231,6 +239,25 @@ def main() -> None:
         "chunk": base_question_metrics(chunk_runs, dataset),
         "ace": base_question_metrics(ace_runs, dataset),
     }
+
+    if args.retrieval_only:
+        # Cheap prerequisite gate: report whether retrieval surfaces the gold
+        # evidence (the binding precondition for the packer to help), then exit
+        # before paying for the reader. all_gold@5 is the decisive number: the
+        # packer cannot assemble evidence retrieval never surfaced.
+        gate_rows: list[dict[str, Any]] = []
+        for rep, runs in (("chunk", chunk_runs), ("ace", ace_runs)):
+            ret = evaluate_retrieval(runs, dataset.questions, k_values=(1, 2, 5))
+            row = {"dataset": args.dataset, "representation": rep, "n": len(dataset.questions), **ret}
+            gate_rows.append(row)
+            print(f"[gate] {rep}: recall@5={ret.get('recall@5')} all_gold@5={ret.get('all_gold@5')}", flush=True)
+        gate_path = out_dir / f"{args.dataset}_retrieval_gate_limit{args.limit}_seed{args.seed}.csv"
+        write_csv(gate_path, gate_rows)
+        print(f"wrote {gate_path}", flush=True)
+        chunk_ag = next((r.get("all_gold@5", 0.0) for r in gate_rows if r["representation"] == "chunk"), 0.0)
+        print(f"[gate] DECISION INPUT: chunk all_gold@5={chunk_ag} "
+              f"(MuSiQue was 0.184 -> packer null; HotpotQA ~0.76 -> packer win)", flush=True)
+        return
 
     if args.reader_backend == "hf":
         print("[density] loading reader once", flush=True)
