@@ -1,6 +1,0 @@
-policy,router_type,method,reader_context,reader_model,ace_retriever,compressor,hybrid_alpha,packed_token_budget,candidate_policies,selection_counts,recall@1,all_gold@1,recall@2,all_gold@2,recall@5,all_gold@5,qwen_em,qwen_f1,avg_reader_evidence_tokens
-chunk_packed_220,fixed,chunk,packed_snippets,Qwen/Qwen2.5-3B-Instruct,none,none,,220,,,0.434,0.0,0.7095,0.483,0.8625,0.741,0.325,0.4251,210.69
-ace_packed_220,fixed,ace_graph,packed_snippets,Qwen/Qwen2.5-3B-Instruct,standard,truncate:320,,220,,,0.4115,0.0,0.6575,0.4,0.8115,0.653,0.323,0.4178,209.28
-ace_focused_220,fixed,ace_graph,focused_packed,Qwen/Qwen2.5-3B-Instruct,standard,truncate:320,,220,,,0.4115,0.0,0.6575,0.4,0.8115,0.653,0.337,0.4281,208.34
-router_rule,rule,adaptive_router,routed,Qwen/Qwen2.5-3B-Instruct,,,,,chunk_packed_220|ace_packed_220|ace_focused_220,"{""ace_focused_220"": 5, ""ace_packed_220"": 531, ""chunk_packed_220"": 464}",0.3165,0.0,0.5195,0.212,0.8005,0.626,0.331,0.4307,209.8
-router_oracle,oracle,adaptive_router,routed,Qwen/Qwen2.5-3B-Instruct,,,,,chunk_packed_220|ace_packed_220|ace_focused_220,"{""ace_focused_220"": 310, ""ace_packed_220"": 343, ""chunk_packed_220"": 347}",0.3375,0.0,0.553,0.254,0.805,0.639,0.452,0.5549,204.45
