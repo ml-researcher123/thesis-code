@@ -1,4 +1,4 @@
-"""Current Kaggle control job: Stage-4 evidence-density + submodular packing.
+"""Current Kaggle control job: Stage-9 larger-reader scaling test (Run A).
 
 This file lives in the GitHub repo under control/main.py. Kaggle's github loop
 runs it whenever this file changes.
@@ -7,10 +7,10 @@ Design note (how new methodology reaches Kaggle):
   The Kaggle reader does NOT run code straight from GitHub. It extracts a frozen
   project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) that was uploaded
   as a Kaggle input. To ship *new* code (the submodular packer, the density
-  diagnostics, the Stage-4 runner) without re-uploading a zip, this control
-  script OVERLAYS the files under control/overlay/ (shipped alongside this file
-  in the GitHub repo) onto the extracted project before running. The overlay is
-  additive: it drops in new modules and the new runner.
+  diagnostics, the Stage-4 runner, and now the device_map/4-bit reader loader)
+  without re-uploading a zip, this control script OVERLAYS the files under
+  control/overlay/ (shipped alongside this file in the GitHub repo) onto the
+  extracted project before running. The overlay is additive.
 """
 
 from __future__ import annotations
@@ -28,24 +28,27 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage8-musique-richretrieval-v1"
+JOB_VERSION = "stage9-hotpotqa-reader7b-v1"
 
-# Stage-8: targeted retrieval-unlock test on MuSiQue.
-# Stage-7 found NO packer advantage on MuSiQue, but the cause was retrieval, not
-# packing: all_gold@5 was only 0.18 and ans_in_context ~0.20, so the packer had
-# almost no gold evidence to assemble. The mechanism predicts that if retrieval
-# actually surfaces the multi-hop evidence (wider top-k + more expansion) AND the
-# budget is roomy enough to hold 2-4 hops, the chunk_submod advantage should
-# appear. This job re-runs the MuSiQue factorial with wider retrieval
-# (--top-k 12, --top-k-nodes 64, --max-expanded-docs 8) at roomier budgets
-# {240, 160}. Positive => MuSiQue becomes a 2nd positive datapoint and confirms
-# the "sufficient retrieval" condition; null => packing genuinely can't help on
-# MuSiQue even with good inputs (clean scope statement). Skips fast if no mount.
-MUSIQUE_BUDGETS = [240, 160]
-MUSIQUE_LIMIT = 500
-MUSIQUE_TOP_K = 12
-MUSIQUE_TOP_K_NODES = 64
-MUSIQUE_MAX_EXPANDED = 8
+# Stage-9 (Run A): does the HotpotQA packer win survive a larger reader?
+# The headline result (Stage-4b) used Qwen2.5-3B. The most dangerous reviewer
+# objection is "a stronger reader just absorbs the redundancy your packer
+# removes, so this is irrelevant at scale." This job re-runs the *exact* HotpotQA
+# 2x3 factorial (same data, retrieval, budget) changing only the reader to
+# Qwen2.5-7B-Instruct, sharded across the 2xT4 box via device_map="auto" (7B in
+# fp16 does not fit one 15GB T4). The only changed variable is reader size.
+#   - Win holds        => robustness; strong paper strengthener.
+#   - Win shrinks (+ve) => reframe as "packing matters most for small readers".
+#   - Win vanishes      => honest scaling limitation; the diagnostic still holds.
+# Retrieval knobs match Stage-4b HotpotQA exactly (top-k 5 / nodes 48 / expand 5)
+# so chunk_submod-vs-chunk_focused is directly comparable across reader sizes.
+READER_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+HOTPOT_BUDGET = 160
+HOTPOT_LIMIT = 500
+HOTPOT_SEEDS = [42, 13]
+HOTPOT_TOP_K = 5
+HOTPOT_TOP_K_NODES = 48
+HOTPOT_MAX_EXPANDED = 5
 
 
 def log(message: str) -> None:
@@ -137,76 +140,8 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-# Reader/embedder args shared across jobs. Retrieval-breadth knobs (--top-k,
-# --top-k-nodes, --max-expanded-docs) are set per job so Stage-8 can widen them.
-_COMMON_RETRIEVAL_ARGS = [
-    "--embedder", "sentence-transformers",
-    "--embedding-model", "BAAI/bge-small-en-v1.5",
-    "--embed-device", "cuda",
-    "--compressor", "truncate",
-    "--compress-dims", "320",
-    "--reader-backend", "hf",
-    "--reader-model", "Qwen/Qwen2.5-3B-Instruct",
-    "--reader-device", "cuda",
-    "--reader-batch-size", "2",
-    "--mmr-lambda", "0.7",
-]
-
-
-def find_musique_jsonl() -> Path | None:
-    """Locate a MuSiQue jsonl mount under /kaggle/input (direct file or inside a zip).
-
-    Matches the exact name ``musique.jsonl`` first, then any ``*.jsonl`` whose name
-    looks like a MuSiQue export (e.g. ``musique_ans_v1.0_dev.jsonl``), preferring
-    answerable dev splits. Falls back to extracting from a ``*musique*.zip``.
-    """
-    direct = sorted(INPUT_ROOT.rglob("musique.jsonl"), key=lambda path: len(str(path)))
-    if direct:
-        return direct[0]
-
-    def _score(p: Path) -> tuple[int, int, int]:
-        name = p.name.lower()
-        return (
-            0 if "musique" in name else 1,
-            0 if "dev" in name else (1 if "validation" in name else 2),
-            len(str(p)),
-        )
-
-    loose = [
-        p for p in INPUT_ROOT.rglob("*.jsonl")
-        if "musique" in p.name.lower() or "musique" in str(p.parent).lower()
-    ]
-    # Prefer answerable ('ans') over 'full' when both are present.
-    loose.sort(key=lambda p: (0 if "ans" in p.name.lower() else 1, *_score(p)))
-    if loose:
-        log(f"[musique] using direct jsonl {loose[0]}")
-        return loose[0]
-
-    data_root = WORKING_ROOT / "data" / "raw"
-    data_root.mkdir(parents=True, exist_ok=True)
-    zip_candidates = sorted(
-        [path for path in INPUT_ROOT.rglob("*.zip") if "musique" in path.name.lower()],
-        key=lambda path: len(str(path)),
-    )
-    for zip_path in zip_candidates:
-        with zipfile.ZipFile(zip_path) as zf:
-            jsonl_names = [
-                name for name in zf.namelist()
-                if name.endswith(".jsonl") and ("dev" in name.lower() or "musique" in name.lower())
-            ]
-            if not jsonl_names:
-                continue
-            preferred = sorted(jsonl_names, key=lambda name: (0 if "dev" in name.lower() else 1, len(name)))[0]
-            out_path = data_root / "musique.jsonl"
-            with zf.open(preferred) as src, out_path.open("wb") as dst:
-                shutil.copyfileobj(src, dst)
-            log(f"Extracted MuSiQue {preferred} from {zip_path} to {out_path}")
-            return out_path
-    return None
-
-
-def run_density_musique(musique_path: Path, budget: int) -> bool:
-    job_name = f"stage8_density_packer_musique_richret_budget{budget}_limit{MUSIQUE_LIMIT}_qwen3b"
+def run_density_hotpot_7b(seed: int) -> bool:
+    job_name = f"stage9_density_packer_hotpotqa_reader7b_budget{HOTPOT_BUDGET}_limit{HOTPOT_LIMIT}_seed{seed}"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
@@ -214,43 +149,47 @@ def run_density_musique(musique_path: Path, budget: int) -> bool:
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "experiments.run_density_router",
-        "--dataset", "musique_local",
-        "--musique-path", str(musique_path),
-        "--limit", str(MUSIQUE_LIMIT),
+        "--dataset", "hotpotqa",
+        "--split", "validation",
+        "--limit", str(HOTPOT_LIMIT),
+        "--seed", str(seed),
         "--ace-retriever", "standard",
-        "--top-k", str(MUSIQUE_TOP_K),
-        "--top-k-nodes", str(MUSIQUE_TOP_K_NODES),
-        "--max-expanded-docs", str(MUSIQUE_MAX_EXPANDED),
-        *_COMMON_RETRIEVAL_ARGS,
-        "--budget", str(budget),
+        "--top-k", str(HOTPOT_TOP_K),
+        "--top-k-nodes", str(HOTPOT_TOP_K_NODES),
+        "--max-expanded-docs", str(HOTPOT_MAX_EXPANDED),
+        "--embedder", "sentence-transformers",
+        "--embedding-model", "BAAI/bge-small-en-v1.5",
+        "--embed-device", "cuda",
+        "--compressor", "truncate",
+        "--compress-dims", "320",
+        "--reader-backend", "hf",
+        "--reader-model", READER_MODEL,
+        "--reader-device", "cuda",
+        "--reader-device-map", "auto",   # shard 7B across the 2xT4 box
+        "--reader-batch-size", "2",
+        "--mmr-lambda", "0.7",
+        "--budget", str(HOTPOT_BUDGET),
         "--out-dir", str(out_dir),
     ]
     return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-8 MuSiQue rich-retrieval unlock ({JOB_VERSION}) ===")
+    log(f"=== control/main.py: Stage-9 HotpotQA larger-reader scaling test ({JOB_VERSION}) ===")
+    log(f"--- reader={READER_MODEL} budget={HOTPOT_BUDGET} limit={HOTPOT_LIMIT} seeds={HOTPOT_SEEDS} ---")
     prepare_project()
     apply_overlay()
-    musique_path = find_musique_jsonl()
-    if musique_path is None:
-        log("[musique] NO MuSiQue mount found under /kaggle/input.")
-        log("[musique] Add a Kaggle input containing 'musique.jsonl' or a '*musique*.zip'")
-        log("[musique] (with a *dev*.jsonl inside), then re-trigger. Exiting without re-running HotpotQA.")
-        log("=== control/main.py done: stage8 musique SKIPPED (not mounted) ===")
-        return
-    log(f"--- musique found at {musique_path} ---")
     results: dict[str, bool] = {}
-    for budget in MUSIQUE_BUDGETS:
-        log(f"--- musique budget {budget} ---")
+    for seed in HOTPOT_SEEDS:
+        log(f"--- hotpotqa 7B seed {seed} ---")
         try:
-            results[f"musique_b{budget}"] = run_density_musique(musique_path, budget)
+            results[f"hotpot_seed{seed}"] = run_density_hotpot_7b(seed)
         except Exception as exc:
-            log(f"[error] musique budget {budget} raised {exc!r}")
-            results[f"musique_b{budget}"] = False
+            log(f"[error] hotpotqa 7B seed {seed} raised {exc!r}")
+            results[f"hotpot_seed{seed}"] = False
     ok = [s for s, good in results.items() if good]
     bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage8 musique richret; ok={ok} failed={bad} ===")
+    log(f"=== control/main.py done: stage9 hotpotqa reader7b; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":

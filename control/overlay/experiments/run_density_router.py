@@ -74,6 +74,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reader-model", default="Qwen/Qwen2.5-3B-Instruct")
     parser.add_argument("--reader-device", default="cuda")
     parser.add_argument("--reader-batch-size", type=int, default=2)
+    parser.add_argument("--reader-device-map", default=None,
+                        help="transformers device_map (e.g. 'auto') to shard a large reader across visible GPUs.")
+    parser.add_argument("--reader-load-4bit", action="store_true",
+                        help="Load the reader in 4-bit (bitsandbytes) to fit a large model on one GPU.")
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--max-input-tokens", type=int, default=2048)
     parser.add_argument("--snippet-window", type=int, default=1)
@@ -236,6 +240,8 @@ def main() -> None:
             batch_size=args.reader_batch_size,
             max_new_tokens=args.max_new_tokens,
             max_input_tokens=args.max_input_tokens,
+            device_map=args.reader_device_map,
+            load_in_4bit=args.reader_load_4bit,
         )
         reader_name = args.reader_model
     else:
