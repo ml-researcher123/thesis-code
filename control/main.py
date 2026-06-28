@@ -1,4 +1,4 @@
-"""Current Kaggle control job: Stage-10a 2WikiMultiHopQA retrieval gate (Run B prereq).
+"""Current Kaggle control job: Stage-10b 2WikiMultiHopQA full factorial (Run B).
 
 This file lives in the GitHub repo under control/main.py. Kaggle's github loop
 runs it whenever this file changes.
@@ -7,18 +7,28 @@ Design note (how new methodology reaches Kaggle):
   The Kaggle reader does NOT run code straight from GitHub. It extracts a frozen
   project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) that was uploaded
   as a Kaggle input. To ship *new* code (the submodular packer, the density
-  diagnostics, the Stage-4 runner, the device_map reader loader, and now the
-  2WikiMultiHopQA loader + retrieval-only gate) without re-uploading a zip, this
-  control script OVERLAYS the files under control/overlay/ (shipped alongside
-  this file in the GitHub repo) onto the extracted project before running.
+  diagnostics, the Stage-4 runner, and the 2WikiMultiHopQA loader) without
+  re-uploading a zip, this control script OVERLAYS the files under
+  control/overlay/ (shipped alongside this file in the GitHub repo) onto the
+  extracted project before running. The overlay is additive.
 
-Stage-10a is a CHEAP PREREQUISITE GATE for Run B (a second positive multi-hop
-dataset). Before paying for a full 2x3 factorial + 3B reader on 2Wiki, we run
-ONLY retrieval and measure whether the gold evidence is actually surfaced. The
-packer cannot assemble evidence retrieval never returned -- this is exactly the
-condition MuSiQue failed (all_gold@5=0.184 -> packer null). If 2Wiki clears the
-bar, a follow-up job runs the full factorial; if not, 2Wiki joins the scope map
-as another retrieval-bottlenecked boundary. No reader is loaded in this job.
+Stage-10b is Run B: a SECOND positive multi-hop dataset for the packer claim.
+The Stage-10a retrieval gate cleared (2Wiki chunk all_gold@5 = 0.43, well above
+MuSiQue's 0.18 bottleneck and clear of the >~0.40 bar), so retrieval surfaces
+the multi-hop gold evidence and the packer actually has something to assemble.
+This job runs the EXACT HotpotQA Stage-4b 2x3 factorial (chunk/ace x
+focused/mmr/submod, plus naive packed) -- same retrieval (top-k 5 / nodes 48 /
+expand 5), same budget 160, same Qwen2.5-3B reader, same 3 seeds {42,13,7} --
+changing ONLY the dataset to 2Wiki. We deliberately use the 3B reader (not the
+Stage-9 7B) because Run B tests whether the win REPLICATES at the scale where it
+worked; a 7B run would confound dataset transfer with the Stage-9 reader-scale
+null. Outcomes:
+  - submod beats best heuristic (sig, 3 seeds) => second positive dataset; the
+    HotpotQA win is not a one-dataset artifact; strong paper strengthener.
+  - null but submod still beats naive packed  => packing-objective survives,
+    edge-over-heuristic is HotpotQA-specific; report as scoped.
+  - flat null                                  => 2Wiki joins the scope map.
+The paper headline is NOT touched until the user approves the win/lose framing.
 """
 
 from __future__ import annotations
@@ -36,15 +46,17 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage10a-2wiki-retrieval-gate-v1"
+JOB_VERSION = "stage10b-2wiki-factorial-3b-v1"
 
-# Retrieval settings match HotpotQA Stage-4b exactly so all_gold@5 is directly
-# comparable across datasets (HotpotQA ~0.76 -> packer wins; MuSiQue 0.184 ->
-# packer null). Decision is made OFFLINE after reading chunk all_gold@5:
-#   >~ 0.40  -> retrieval surfaces multi-hop evidence; run the full Run B factorial.
-#   ~  0.18  -> MuSiQue-like bottleneck; abort Run B, fold 2Wiki into the scope map.
+# Everything below matches HotpotQA Stage-4b EXACTLY except the dataset, so
+# chunk_submod-vs-chunk_focused on 2Wiki is directly comparable to the HotpotQA
+# headline. Retrieval (top-k 5 / nodes 48 / expand 5) also matches the Stage-10a
+# gate that produced all_gold@5 = 0.43, so the factorial sees the same retrieval
+# the gate measured.
+READER_MODEL = "Qwen/Qwen2.5-3B-Instruct"
+TWO_WIKI_BUDGET = 160
 TWO_WIKI_LIMIT = 500
-TWO_WIKI_SEED = 42
+TWO_WIKI_SEEDS = [42, 13, 7]
 TWO_WIKI_TOP_K = 5
 TWO_WIKI_TOP_K_NODES = 48
 TWO_WIKI_MAX_EXPANDED = 5
@@ -165,20 +177,19 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_2wiki_gate(twowiki_file: Path) -> bool:
-    job_name = f"stage10a_2wiki_retrieval_gate_limit{TWO_WIKI_LIMIT}_seed{TWO_WIKI_SEED}"
+def run_2wiki_factorial(twowiki_file: Path, seed: int) -> bool:
+    job_name = f"stage10b_density_packer_2wiki_qwen3b_budget{TWO_WIKI_BUDGET}_limit{TWO_WIKI_LIMIT}_seed{seed}"
     out_dir = WORKING_ROOT / "colab_results" / job_name
-    if out_dir.exists() and any(out_dir.glob("*retrieval_gate*.csv")):
-        log(f"[skip] {job_name} already has a gate CSV")
+    if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
+        log(f"[skip] {job_name} already has metrics")
         return True
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "experiments.run_density_router",
         "--dataset", "2wiki_local",
         "--twowiki-path", str(twowiki_file),
-        "--retrieval-only",
         "--limit", str(TWO_WIKI_LIMIT),
-        "--seed", str(TWO_WIKI_SEED),
+        "--seed", str(seed),
         "--ace-retriever", "standard",
         "--top-k", str(TWO_WIKI_TOP_K),
         "--top-k-nodes", str(TWO_WIKI_TOP_K_NODES),
@@ -188,21 +199,34 @@ def run_2wiki_gate(twowiki_file: Path) -> bool:
         "--embed-device", "cuda",
         "--compressor", "truncate",
         "--compress-dims", "320",
+        "--reader-backend", "hf",
+        "--reader-model", READER_MODEL,
+        "--reader-device", "cuda",
+        "--reader-batch-size", "2",
+        "--mmr-lambda", "0.7",
+        "--budget", str(TWO_WIKI_BUDGET),
         "--out-dir", str(out_dir),
     ]
-    return run(cmd, cwd=WORK_ROOT, timeout=3600, check=False) == 0
+    return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-10a 2Wiki retrieval gate ({JOB_VERSION}) ===")
-    log(f"--- limit={TWO_WIKI_LIMIT} seed={TWO_WIKI_SEED} top-k={TWO_WIKI_TOP_K} "
-        f"nodes={TWO_WIKI_TOP_K_NODES} expand={TWO_WIKI_MAX_EXPANDED} (no reader) ---")
+    log(f"=== control/main.py: Stage-10b 2Wiki full factorial (Run B) ({JOB_VERSION}) ===")
+    log(f"--- reader={READER_MODEL} budget={TWO_WIKI_BUDGET} limit={TWO_WIKI_LIMIT} seeds={TWO_WIKI_SEEDS} ---")
     prepare_project()
     apply_overlay()
     twowiki_file = find_2wiki_file()
-    ok = run_2wiki_gate(twowiki_file)
-    log(f"=== control/main.py done: stage10a 2wiki retrieval gate; ok={ok} ===")
-    log("Read chunk all_gold@5 from the gate CSV / [gate] log line to decide on the full Run B factorial.")
+    results: dict[str, bool] = {}
+    for seed in TWO_WIKI_SEEDS:
+        log(f"--- 2wiki factorial 3B seed {seed} ---")
+        try:
+            results[f"2wiki_seed{seed}"] = run_2wiki_factorial(twowiki_file, seed)
+        except Exception as exc:
+            log(f"[error] 2wiki factorial seed {seed} raised {exc!r}")
+            results[f"2wiki_seed{seed}"] = False
+    ok = [s for s, good in results.items() if good]
+    bad = [s for s, good in results.items() if not good]
+    log(f"=== control/main.py done: stage10b 2wiki factorial; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
