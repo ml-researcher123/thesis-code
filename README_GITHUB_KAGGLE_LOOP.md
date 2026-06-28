@@ -69,3 +69,5 @@ G:\My Drive\my-research\github_control
 ```
 
 This keeps the current Kaggle/Colab control state available even if GitHub or Kaggle sessions are reset.
+
+Credential check note: this README can receive harmless test commits to verify GitHub push access.
