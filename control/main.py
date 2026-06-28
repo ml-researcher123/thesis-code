@@ -28,19 +28,24 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage7-musique-multihop-v1"
+JOB_VERSION = "stage8-musique-richretrieval-v1"
 
-# Stage-7: the harder-multi-hop confirmation of the scoped packer claim.
-# HotpotQA (Stages 4-6): chunk_submod robustly beats naive packing and beats the
-# focused heuristic + MMR at intermediate budgets; the win is mediated by
-# answer-in-context and comes from complementary multi-hop coverage amid
-# distractors. RAGBench (single-pass) showed no transfer. MuSiQue is a HARDER
-# 2-4 hop set, so the mechanism predicts a LARGER submod gap. This job runs the
-# 2x3 factorial on MuSiQue at the matched budget 160 (and a tighter 96 to probe
-# the curve). If MuSiQue is not mounted under /kaggle/input, it logs and exits
-# WITHOUT re-running the finished HotpotQA work.
-MUSIQUE_BUDGETS = [160, 96]
+# Stage-8: targeted retrieval-unlock test on MuSiQue.
+# Stage-7 found NO packer advantage on MuSiQue, but the cause was retrieval, not
+# packing: all_gold@5 was only 0.18 and ans_in_context ~0.20, so the packer had
+# almost no gold evidence to assemble. The mechanism predicts that if retrieval
+# actually surfaces the multi-hop evidence (wider top-k + more expansion) AND the
+# budget is roomy enough to hold 2-4 hops, the chunk_submod advantage should
+# appear. This job re-runs the MuSiQue factorial with wider retrieval
+# (--top-k 12, --top-k-nodes 64, --max-expanded-docs 8) at roomier budgets
+# {240, 160}. Positive => MuSiQue becomes a 2nd positive datapoint and confirms
+# the "sufficient retrieval" condition; null => packing genuinely can't help on
+# MuSiQue even with good inputs (clean scope statement). Skips fast if no mount.
+MUSIQUE_BUDGETS = [240, 160]
 MUSIQUE_LIMIT = 500
+MUSIQUE_TOP_K = 12
+MUSIQUE_TOP_K_NODES = 64
+MUSIQUE_MAX_EXPANDED = 8
 
 
 def log(message: str) -> None:
@@ -132,14 +137,14 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
+# Reader/embedder args shared across jobs. Retrieval-breadth knobs (--top-k,
+# --top-k-nodes, --max-expanded-docs) are set per job so Stage-8 can widen them.
 _COMMON_RETRIEVAL_ARGS = [
     "--embedder", "sentence-transformers",
     "--embedding-model", "BAAI/bge-small-en-v1.5",
     "--embed-device", "cuda",
     "--compressor", "truncate",
     "--compress-dims", "320",
-    "--top-k-nodes", "48",
-    "--max-expanded-docs", "5",
     "--reader-backend", "hf",
     "--reader-model", "Qwen/Qwen2.5-3B-Instruct",
     "--reader-device", "cuda",
@@ -201,7 +206,7 @@ def find_musique_jsonl() -> Path | None:
 
 
 def run_density_musique(musique_path: Path, budget: int) -> bool:
-    job_name = f"stage7_density_packer_musique_budget{budget}_limit{MUSIQUE_LIMIT}_qwen3b"
+    job_name = f"stage8_density_packer_musique_richret_budget{budget}_limit{MUSIQUE_LIMIT}_qwen3b"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
@@ -213,6 +218,9 @@ def run_density_musique(musique_path: Path, budget: int) -> bool:
         "--musique-path", str(musique_path),
         "--limit", str(MUSIQUE_LIMIT),
         "--ace-retriever", "standard",
+        "--top-k", str(MUSIQUE_TOP_K),
+        "--top-k-nodes", str(MUSIQUE_TOP_K_NODES),
+        "--max-expanded-docs", str(MUSIQUE_MAX_EXPANDED),
         *_COMMON_RETRIEVAL_ARGS,
         "--budget", str(budget),
         "--out-dir", str(out_dir),
@@ -221,7 +229,7 @@ def run_density_musique(musique_path: Path, budget: int) -> bool:
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-7 MuSiQue multi-hop confirmation ({JOB_VERSION}) ===")
+    log(f"=== control/main.py: Stage-8 MuSiQue rich-retrieval unlock ({JOB_VERSION}) ===")
     prepare_project()
     apply_overlay()
     musique_path = find_musique_jsonl()
@@ -229,7 +237,7 @@ def main() -> None:
         log("[musique] NO MuSiQue mount found under /kaggle/input.")
         log("[musique] Add a Kaggle input containing 'musique.jsonl' or a '*musique*.zip'")
         log("[musique] (with a *dev*.jsonl inside), then re-trigger. Exiting without re-running HotpotQA.")
-        log("=== control/main.py done: stage7 musique SKIPPED (not mounted) ===")
+        log("=== control/main.py done: stage8 musique SKIPPED (not mounted) ===")
         return
     log(f"--- musique found at {musique_path} ---")
     results: dict[str, bool] = {}
@@ -242,7 +250,7 @@ def main() -> None:
             results[f"musique_b{budget}"] = False
     ok = [s for s, good in results.items() if good]
     bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage7 musique; ok={ok} failed={bad} ===")
+    log(f"=== control/main.py done: stage8 musique richret; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
