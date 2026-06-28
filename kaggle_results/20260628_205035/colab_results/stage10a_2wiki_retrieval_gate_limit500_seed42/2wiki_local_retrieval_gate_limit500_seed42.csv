@@ -1,0 +1,3 @@
+dataset,representation,n,recall@1,all_gold@1,recall@2,all_gold@2,recall@5,all_gold@5
+2wiki_local,chunk,500,0.4305,0.0,0.629,0.29,0.718,0.43
+2wiki_local,ace,500,0.4115,0.0,0.6065,0.272,0.711,0.43
