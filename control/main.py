@@ -28,16 +28,19 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage5-crossdataset-packer-v1"
+JOB_VERSION = "stage6-budgetcurve-musique-v1"
 
-# Cross-dataset generality of the packer win. HotpotQA established (3 seeds, MMR
-# control) that chunk_submod > {focused, mmr, packed}. Now test whether that
-# transfers under domain shift on RAGBench. CovidQA was the cleanest ACE transfer
-# previously; ExpertQA a smaller positive. The decisive question is F1/EM, since
-# RAGBench marks every context gold (density metrics saturate).
-RAGBENCH_SUBSETS = ["covidqa", "expertqa"]
-RAGBENCH_SPLIT = "test"
-RAGBENCH_LIMIT = 300
+# Stage-5 (RAGBench) showed the packer win does NOT transfer to single-pass QA,
+# consistent with the mechanism (submod wins via complementary multi-hop coverage
+# amid distractors). Stage-6 tests the two falsifiable predictions of the scoped
+# claim:
+#   (a) on HotpotQA the submod advantage GROWS as the budget tightens;
+#   (b) on a HARDER multi-hop dataset (MuSiQue) submod wins by a LARGER margin.
+# The budget curve is guaranteed; MuSiQue runs only if a mount is found.
+BUDGET_CURVE = [96, 128, 224]   # 160 already done in Stage-4b seed 42
+BUDGET_SEED = 42
+MUSIQUE_BUDGET = 160
+MUSIQUE_LIMIT = 500
 
 
 def log(message: str) -> None:
@@ -129,74 +132,116 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_density_ragbench(subset: str) -> bool:
-    job_name = f"stage5_density_packer_ragbench_{subset}_budget160_limit{RAGBENCH_LIMIT}_qwen3b"
+_COMMON_RETRIEVAL_ARGS = [
+    "--embedder", "sentence-transformers",
+    "--embedding-model", "BAAI/bge-small-en-v1.5",
+    "--embed-device", "cuda",
+    "--compressor", "truncate",
+    "--compress-dims", "320",
+    "--top-k-nodes", "48",
+    "--max-expanded-docs", "5",
+    "--reader-backend", "hf",
+    "--reader-model", "Qwen/Qwen2.5-3B-Instruct",
+    "--reader-device", "cuda",
+    "--reader-batch-size", "2",
+    "--mmr-lambda", "0.7",
+]
+
+
+def find_musique_jsonl() -> Path | None:
+    """Locate a MuSiQue jsonl mount under /kaggle/input (direct file or inside a zip)."""
+    direct = sorted(INPUT_ROOT.rglob("musique.jsonl"), key=lambda path: len(str(path)))
+    if direct:
+        return direct[0]
+    data_root = WORKING_ROOT / "data" / "raw"
+    data_root.mkdir(parents=True, exist_ok=True)
+    zip_candidates = sorted(
+        [path for path in INPUT_ROOT.rglob("*.zip") if "musique" in path.name.lower()],
+        key=lambda path: len(str(path)),
+    )
+    for zip_path in zip_candidates:
+        with zipfile.ZipFile(zip_path) as zf:
+            jsonl_names = [
+                name for name in zf.namelist()
+                if name.endswith(".jsonl") and ("dev" in name.lower() or "musique" in name.lower())
+            ]
+            if not jsonl_names:
+                continue
+            preferred = sorted(jsonl_names, key=lambda name: (0 if "dev" in name.lower() else 1, len(name)))[0]
+            out_path = data_root / "musique.jsonl"
+            with zf.open(preferred) as src, out_path.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+            log(f"Extracted MuSiQue {preferred} from {zip_path} to {out_path}")
+            return out_path
+    return None
+
+
+def run_density_hotpotqa_budget(budget: int) -> bool:
+    job_name = f"stage6_density_packer_hotpotqa_seed{BUDGET_SEED}_budget{budget}_limit500_qwen3b"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
         return True
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
-        sys.executable,
-        "-m",
-        "experiments.run_density_router",
-        "--dataset",
-        "ragbench",
-        "--ragbench-subset",
-        subset,
-        "--split",
-        RAGBENCH_SPLIT,
-        "--limit",
-        str(RAGBENCH_LIMIT),
-        "--embedder",
-        "sentence-transformers",
-        "--embedding-model",
-        "BAAI/bge-small-en-v1.5",
-        "--embed-device",
-        "cuda",
-        "--compressor",
-        "truncate",
-        "--compress-dims",
-        "320",
-        "--top-k-nodes",
-        "48",
-        "--max-expanded-docs",
-        "5",
-        "--ace-retriever",
-        "standard",
-        "--reader-backend",
-        "hf",
-        "--reader-model",
-        "Qwen/Qwen2.5-3B-Instruct",
-        "--reader-device",
-        "cuda",
-        "--reader-batch-size",
-        "2",
-        "--budget",
-        "160",
-        "--mmr-lambda",
-        "0.7",
-        "--out-dir",
-        str(out_dir),
+        sys.executable, "-m", "experiments.run_density_router",
+        "--dataset", "hotpotqa",
+        "--split", "validation",
+        "--seed", str(BUDGET_SEED),
+        "--limit", "500",
+        "--ace-retriever", "standard",
+        *_COMMON_RETRIEVAL_ARGS,
+        "--budget", str(budget),
+        "--out-dir", str(out_dir),
+    ]
+    return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
+
+
+def run_density_musique(musique_path: Path) -> bool:
+    job_name = f"stage6_density_packer_musique_budget{MUSIQUE_BUDGET}_limit{MUSIQUE_LIMIT}_qwen3b"
+    out_dir = WORKING_ROOT / "colab_results" / job_name
+    if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
+        log(f"[skip] {job_name} already has metrics")
+        return True
+    out_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        sys.executable, "-m", "experiments.run_density_router",
+        "--dataset", "musique_local",
+        "--musique-path", str(musique_path),
+        "--limit", str(MUSIQUE_LIMIT),
+        "--ace-retriever", "standard",
+        *_COMMON_RETRIEVAL_ARGS,
+        "--budget", str(MUSIQUE_BUDGET),
+        "--out-dir", str(out_dir),
     ]
     return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-5 cross-dataset packer factorial ({JOB_VERSION}) ===")
+    log(f"=== control/main.py: Stage-6 budget curve + MuSiQue ({JOB_VERSION}) ===")
     prepare_project()
     apply_overlay()
     results: dict[str, bool] = {}
-    for subset in RAGBENCH_SUBSETS:
-        log(f"--- ragbench:{subset} ---")
+    for budget in BUDGET_CURVE:
+        log(f"--- hotpotqa budget {budget} ---")
         try:
-            results[subset] = run_density_ragbench(subset)
-        except Exception as exc:  # keep going to the next subset on a dataset error
-            log(f"[error] ragbench:{subset} raised {exc!r}")
-            results[subset] = False
+            results[f"hotpotqa_b{budget}"] = run_density_hotpotqa_budget(budget)
+        except Exception as exc:
+            log(f"[error] hotpotqa budget {budget} raised {exc!r}")
+            results[f"hotpotqa_b{budget}"] = False
+    musique_path = find_musique_jsonl()
+    if musique_path is not None:
+        log(f"--- musique found at {musique_path} ---")
+        try:
+            results["musique"] = run_density_musique(musique_path)
+        except Exception as exc:
+            log(f"[error] musique raised {exc!r}")
+            results["musique"] = False
+    else:
+        log("[musique] no MuSiQue mount found under /kaggle/input; skipping (budget curve still ran)")
     ok = [s for s, good in results.items() if good]
     bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage5 cross-dataset; ok={ok} failed={bad} ===")
+    log(f"=== control/main.py done: stage6 budgetcurve+musique; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
