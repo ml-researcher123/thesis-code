@@ -1,34 +1,37 @@
-"""Current Kaggle control job: Stage-10b 2WikiMultiHopQA full factorial (Run B).
+"""Current Kaggle control job: Stage-11 HotpotQA reader-scale ladder (14B + 7B-4bit bridge).
 
 This file lives in the GitHub repo under control/main.py. Kaggle's github loop
 runs it whenever this file changes.
 
 Design note (how new methodology reaches Kaggle):
   The Kaggle reader does NOT run code straight from GitHub. It extracts a frozen
-  project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) that was uploaded
-  as a Kaggle input. To ship *new* code (the submodular packer, the density
-  diagnostics, the Stage-4 runner, and the 2WikiMultiHopQA loader) without
-  re-uploading a zip, this control script OVERLAYS the files under
-  control/overlay/ (shipped alongside this file in the GitHub repo) onto the
-  extracted project before running. The overlay is additive.
+  project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) uploaded as a
+  Kaggle input, then this control script OVERLAYS the *.py files under
+  control/overlay/ (the submodular packer, density diagnostics, the Stage-4
+  runner, and the device_map / load_in_4bit reader loader) onto the extracted
+  project before running. The overlay is additive.
 
-Stage-10b is Run B: a SECOND positive multi-hop dataset for the packer claim.
-The Stage-10a retrieval gate cleared (2Wiki chunk all_gold@5 = 0.43, well above
-MuSiQue's 0.18 bottleneck and clear of the >~0.40 bar), so retrieval surfaces
-the multi-hop gold evidence and the packer actually has something to assemble.
-This job runs the EXACT HotpotQA Stage-4b 2x3 factorial (chunk/ace x
-focused/mmr/submod, plus naive packed) -- same retrieval (top-k 5 / nodes 48 /
-expand 5), same budget 160, same Qwen2.5-3B reader, same 3 seeds {42,13,7} --
-changing ONLY the dataset to 2Wiki. We deliberately use the 3B reader (not the
-Stage-9 7B) because Run B tests whether the win REPLICATES at the scale where it
-worked; a 7B run would confound dataset transfer with the Stage-9 reader-scale
-null. Outcomes:
-  - submod beats best heuristic (sig, 3 seeds) => second positive dataset; the
-    HotpotQA win is not a one-dataset artifact; strong paper strengthener.
-  - null but submod still beats naive packed  => packing-objective survives,
-    edge-over-heuristic is HotpotQA-specific; report as scoped.
-  - flat null                                  => 2Wiki joins the scope map.
-The paper headline is NOT touched until the user approves the win/lose framing.
+Stage-11 extends the reader-scale axis (§6.5) from a single 7B point into a
+LADDER: Qwen2.5 at 3B (done, §5), 7B (done fp16, Stage-9), and now 14B, plus a
+7B-4bit quantization control. The goal is to trace exactly how the packer's edge
+over the focused heuristic is absorbed as the reader grows, and to confirm the
+trend is a SCALE effect, not a quantization artifact:
+
+  - 7B-4bit bridge: same model/data/seeds as the Stage-9 7B-fp16 run, changing
+    ONLY precision. If the submod-vs-focused contrast looks like 7B-fp16, then
+    4-bit quantization (required to fit 14B/32B on the 2xT4 box) is not driving
+    the ladder.
+  - 14B-4bit: the next rung. 14B nf4 (~8 GB) fits the box; device_map="auto"
+    shards if needed.
+
+32B is run separately (Stage-12, likely single-seed) because it is much slower
+on Turing T4s (no native int4) and may not finish a full factorial in one
+session. Per-seed skip-logic (checks for an existing *metrics.csv) makes every
+run resumable across Kaggle's 9-hour session limit.
+
+Everything except the reader matches the §5 HotpotQA factorial exactly
+(top-k 5 / nodes 48 / expand 5, budget 160, seeds {42,13}) so the contrasts are
+directly comparable across rungs.
 """
 
 from __future__ import annotations
@@ -46,20 +49,22 @@ WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage10b-2wiki-factorial-3b-v1"
+JOB_VERSION = "stage11-hotpotqa-reader-ladder-14b-v1"
 
-# Everything below matches HotpotQA Stage-4b EXACTLY except the dataset, so
-# chunk_submod-vs-chunk_focused on 2Wiki is directly comparable to the HotpotQA
-# headline. Retrieval (top-k 5 / nodes 48 / expand 5) also matches the Stage-10a
-# gate that produced all_gold@5 = 0.43, so the factorial sees the same retrieval
-# the gate measured.
-READER_MODEL = "Qwen/Qwen2.5-3B-Instruct"
-TWO_WIKI_BUDGET = 160
-TWO_WIKI_LIMIT = 500
-TWO_WIKI_SEEDS = [42, 13, 7]
-TWO_WIKI_TOP_K = 5
-TWO_WIKI_TOP_K_NODES = 48
-TWO_WIKI_MAX_EXPANDED = 5
+HOTPOT_BUDGET = 160
+HOTPOT_LIMIT = 500
+HOTPOT_SEEDS = [42, 13]
+HOTPOT_TOP_K = 5
+HOTPOT_TOP_K_NODES = 48
+HOTPOT_MAX_EXPANDED = 5
+
+# Ladder rungs run in this order: the cheaper 7B-4bit bridge first (so the
+# quantization control lands even if the session runs short), then 14B-4bit.
+# (label, model, reader_batch_size)
+LADDER_RUNGS = [
+    ("reader7b_4bit", "Qwen/Qwen2.5-7B-Instruct", 2),
+    ("reader14b_4bit", "Qwen/Qwen2.5-14B-Instruct", 1),
+]
 
 
 def log(message: str) -> None:
@@ -119,32 +124,6 @@ def find_extracted_project() -> Path | None:
     return candidates[0]
 
 
-def find_2wiki_file() -> Path:
-    """Locate a mounted 2WikiMultiHopQA dev split (.json/.jsonl) under /kaggle/input.
-
-    2Wiki releases name the dev split variously (dev.json inside a 2wiki folder,
-    2wiki_dev.json, 2wikimultihopqa_dev.jsonl, ...). We match on a 2wiki/wikimultihop
-    token in the path plus a dev/valid token, preferring the shortest path.
-    """
-    cands: list[Path] = []
-    for path in INPUT_ROOT.rglob("*.json*"):
-        if not path.is_file() or path.suffix.lower() not in (".json", ".jsonl"):
-            continue
-        sp = str(path).lower()
-        has_2wiki = ("2wiki" in sp) or ("wikimultihop" in sp) or ("2_wiki" in sp)
-        has_split = ("dev" in sp) or ("valid" in sp)
-        if has_2wiki and has_split:
-            cands.append(path)
-    cands = sorted(set(cands), key=lambda p: (len(str(p)), str(p)))
-    if not cands:
-        raise FileNotFoundError(
-            "No 2WikiMultiHopQA dev file found. Mount the 2Wiki dev split (.json/.jsonl) "
-            "as a Kaggle input; the path must contain '2wiki'/'wikimultihop' and 'dev'/'valid'."
-        )
-    log(f"[2wiki] using {cands[0]}  ({len(cands)} candidate(s))")
-    return cands[0]
-
-
 def prepare_project() -> None:
     if WORK_ROOT.exists():
         shutil.rmtree(WORK_ROOT)
@@ -159,6 +138,9 @@ def prepare_project() -> None:
             zf.extractall(WORK_ROOT)
         log(f"Extracted {project_zip} to {WORK_ROOT}")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements-cloud.txt"], cwd=WORK_ROOT, timeout=900)
+    # 4-bit (nf4) loading needs bitsandbytes, which is NOT in the frozen zip's
+    # requirements. Install it explicitly; >=0.43 supports Turing (T4, sm_75).
+    run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.43.0"], cwd=WORK_ROOT, timeout=600, check=False)
 
 
 def apply_overlay() -> None:
@@ -177,8 +159,8 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_2wiki_factorial(twowiki_file: Path, seed: int) -> bool:
-    job_name = f"stage10b_density_packer_2wiki_qwen3b_budget{TWO_WIKI_BUDGET}_limit{TWO_WIKI_LIMIT}_seed{seed}"
+def run_ladder_rung(label: str, model: str, batch_size: int, seed: int) -> bool:
+    job_name = f"stage11_density_packer_hotpotqa_{label}_budget{HOTPOT_BUDGET}_limit{HOTPOT_LIMIT}_seed{seed}"
     out_dir = WORKING_ROOT / "colab_results" / job_name
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
         log(f"[skip] {job_name} already has metrics")
@@ -186,47 +168,48 @@ def run_2wiki_factorial(twowiki_file: Path, seed: int) -> bool:
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "experiments.run_density_router",
-        "--dataset", "2wiki_local",
-        "--twowiki-path", str(twowiki_file),
-        "--limit", str(TWO_WIKI_LIMIT),
+        "--dataset", "hotpotqa",
+        "--split", "validation",
+        "--limit", str(HOTPOT_LIMIT),
         "--seed", str(seed),
         "--ace-retriever", "standard",
-        "--top-k", str(TWO_WIKI_TOP_K),
-        "--top-k-nodes", str(TWO_WIKI_TOP_K_NODES),
-        "--max-expanded-docs", str(TWO_WIKI_MAX_EXPANDED),
+        "--top-k", str(HOTPOT_TOP_K),
+        "--top-k-nodes", str(HOTPOT_TOP_K_NODES),
+        "--max-expanded-docs", str(HOTPOT_MAX_EXPANDED),
         "--embedder", "sentence-transformers",
         "--embedding-model", "BAAI/bge-small-en-v1.5",
         "--embed-device", "cuda",
         "--compressor", "truncate",
         "--compress-dims", "320",
         "--reader-backend", "hf",
-        "--reader-model", READER_MODEL,
+        "--reader-model", model,
         "--reader-device", "cuda",
-        "--reader-batch-size", "2",
+        "--reader-load-4bit",            # nf4 + double-quant; auto device_map
+        "--reader-batch-size", str(batch_size),
         "--mmr-lambda", "0.7",
-        "--budget", str(TWO_WIKI_BUDGET),
+        "--budget", str(HOTPOT_BUDGET),
         "--out-dir", str(out_dir),
     ]
     return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
 
 
 def main() -> None:
-    log(f"=== control/main.py: Stage-10b 2Wiki full factorial (Run B) ({JOB_VERSION}) ===")
-    log(f"--- reader={READER_MODEL} budget={TWO_WIKI_BUDGET} limit={TWO_WIKI_LIMIT} seeds={TWO_WIKI_SEEDS} ---")
+    log(f"=== control/main.py: Stage-11 HotpotQA reader-scale ladder ({JOB_VERSION}) ===")
+    log(f"--- rungs={[r[0] for r in LADDER_RUNGS]} budget={HOTPOT_BUDGET} limit={HOTPOT_LIMIT} seeds={HOTPOT_SEEDS} ---")
     prepare_project()
     apply_overlay()
-    twowiki_file = find_2wiki_file()
     results: dict[str, bool] = {}
-    for seed in TWO_WIKI_SEEDS:
-        log(f"--- 2wiki factorial 3B seed {seed} ---")
-        try:
-            results[f"2wiki_seed{seed}"] = run_2wiki_factorial(twowiki_file, seed)
-        except Exception as exc:
-            log(f"[error] 2wiki factorial seed {seed} raised {exc!r}")
-            results[f"2wiki_seed{seed}"] = False
+    for label, model, batch_size in LADDER_RUNGS:
+        for seed in HOTPOT_SEEDS:
+            log(f"--- ladder {label} ({model}) seed {seed} ---")
+            try:
+                results[f"{label}_seed{seed}"] = run_ladder_rung(label, model, batch_size, seed)
+            except Exception as exc:
+                log(f"[error] {label} seed {seed} raised {exc!r}")
+                results[f"{label}_seed{seed}"] = False
     ok = [s for s, good in results.items() if good]
     bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage10b 2wiki factorial; ok={ok} failed={bad} ===")
+    log(f"=== control/main.py done: stage11 reader ladder; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
