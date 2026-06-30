@@ -1,0 +1,24 @@
+name: e8_limit_small
+experiment: e8_limit
+seed: 0
+params:
+  variant: small
+  split: test
+  ks:
+  - 2
+  - 5
+  - 10
+  - 20
+  trunc_dims:
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  trunc_k: 10
+  models:
+  - name: mixedbread-ai/mxbai-embed-large-v1
+  - name: Snowflake/snowflake-arctic-embed-m-v1.5
+    query_prompt: 'Represent this sentence for searching relevant passages: '
+  - name: BAAI/bge-base-en-v1.5
+    query_prompt: 'Represent this sentence for searching relevant passages: '

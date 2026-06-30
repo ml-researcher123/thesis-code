@@ -1,0 +1,96 @@
+{
+  "experiment": "e8_limit",
+  "config_params": {
+    "variant": "small",
+    "split": "test",
+    "ks": [
+      2,
+      5,
+      10,
+      20
+    ],
+    "trunc_dims": [
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
+    "trunc_k": 10,
+    "models": [
+      {
+        "name": "mixedbread-ai/mxbai-embed-large-v1"
+      },
+      {
+        "name": "Snowflake/snowflake-arctic-embed-m-v1.5",
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      },
+      {
+        "name": "BAAI/bge-base-en-v1.5",
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      }
+    ]
+  },
+  "variant": "small",
+  "n_docs": 46,
+  "n_queries": 1000,
+  "ks": [
+    2,
+    5,
+    10,
+    20
+  ],
+  "full_recall": {
+    "mixedbread-ai/mxbai-embed-large-v1": {
+      "2": 0.136,
+      "5": 0.2735,
+      "10": 0.4405,
+      "20": 0.684
+    },
+    "Snowflake/snowflake-arctic-embed-m-v1.5": {
+      "2": 0.2525,
+      "5": 0.4295,
+      "10": 0.619,
+      "20": 0.8275
+    },
+    "BAAI/bge-base-en-v1.5": {
+      "2": 0.1715,
+      "5": 0.3305,
+      "10": 0.4925,
+      "20": 0.713
+    }
+  },
+  "trunc_curves": {
+    "mixedbread-ai/mxbai-embed-large-v1": {
+      "16": 0.265,
+      "32": 0.2935,
+      "64": 0.3075,
+      "128": 0.3415,
+      "256": 0.3785
+    },
+    "Snowflake/snowflake-arctic-embed-m-v1.5": {
+      "16": 0.2875,
+      "32": 0.3135,
+      "64": 0.3755,
+      "128": 0.455,
+      "256": 0.57
+    },
+    "BAAI/bge-base-en-v1.5": {
+      "16": 0.279,
+      "32": 0.3045,
+      "64": 0.3555,
+      "128": 0.3905,
+      "256": 0.439
+    }
+  },
+  "figure": "e8_limit.png",
+  "_meta": {
+    "name": "e8_limit_small",
+    "experiment": "e8_limit",
+    "seconds": 22.95,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "d856c35f3a76",
+    "finished_at": "2026-06-30T21:20:12"
+  }
+}

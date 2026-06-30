@@ -1,0 +1,13 @@
+[     0.0s] === run 'e8_limit_small' ===
+[     0.0s] host=d856c35f3a76 python=3.12.13 config=/kaggle/working/repo/configs/e8_limit_small.yaml
+[     0.2s] device=cuda seed=0
+[     8.6s] E8 LIMIT-small | models=['mixedbread-ai/mxbai-embed-large-v1', 'Snowflake/snowflake-arctic-embed-m-v1.5', 'BAAI/bge-base-en-v1.5'] ks=[2, 5, 10, 20]
+[    11.6s]   corpus=46 queries=1000 (each query has ~2.0 gold docs)
+[    15.5s]   mixedbread-ai/mxbai-embed-large-v1         full_dim= 1024 | R@2=0.136 R@5=0.274 R@10=0.441 R@20=0.684
+[    15.6s]     trunc R@10: d16=0.265 d32=0.293 d64=0.307 d128=0.342 d256=0.379
+[    19.3s]   Snowflake/snowflake-arctic-embed-m-v1.5    full_dim=  768 | R@2=0.253 R@5=0.429 R@10=0.619 R@20=0.828
+[    19.3s]     trunc R@10: d16=0.287 d32=0.314 d64=0.376 d128=0.455 d256=0.570
+[    22.9s]   BAAI/bge-base-en-v1.5                      full_dim=  768 | R@2=0.172 R@5=0.331 R@10=0.492 R@20=0.713
+[    22.9s]     trunc R@10: d16=0.279 d32=0.304 d64=0.355 d128=0.391 d256=0.439
+[    23.2s]   saved figure -> e8_limit.png
+[    23.2s] === done in 22.9s -> /kaggle/working/repo/outputs/e8_limit_small ===
