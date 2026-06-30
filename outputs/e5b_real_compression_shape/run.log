@@ -1,0 +1,36 @@
+[     0.0s] === run 'e5b_real_compression_shape' ===
+[     0.0s] host=3bf7ce70611d python=3.12.13 config=/kaggle/working/repo/configs/e5b_real_compression_shape.yaml
+[     0.2s] device=cuda seed=0
+[     8.3s] E5b multi-token compression | model=mixedbread-ai/mxbai-embed-large-v1 V=8 device=cuda
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c=  2 D_c=   8 | acc=0.189
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c=  4 D_c=  16 | acc=0.317
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c=  8 D_c=  32 | acc=0.627
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c= 16 D_c=  64 | acc=0.848
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c= 32 D_c= 128 | acc=0.925
+[    25.6s]   [WALL] n_f=  4 m=n_f d_c= 64 D_c= 256 | acc=0.957
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c=  2 D_c=  16 | acc=0.160
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c=  4 D_c=  32 | acc=0.278
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c=  8 D_c=  64 | acc=0.542
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c= 16 D_c= 128 | acc=0.856
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c= 32 D_c= 256 | acc=0.957
+[    42.6s]   [WALL] n_f=  8 m=n_f d_c= 64 D_c= 512 | acc=0.980
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c=  2 D_c=  32 | acc=0.154
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c=  4 D_c=  64 | acc=0.223
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c=  8 D_c= 128 | acc=0.438
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c= 16 D_c= 256 | acc=0.827
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c= 32 D_c= 512 | acc=0.968
+[    63.1s]   [WALL] n_f= 16 m=n_f d_c= 64 D_c=1024 | acc=0.988
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c=  2 D_c=  64 | acc=0.141
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c=  4 D_c= 128 | acc=0.185
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c=  8 D_c= 256 | acc=0.306
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c= 16 D_c= 512 | acc=0.710
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c= 32 D_c=1024 | acc=0.946
+[    90.4s]   [WALL] n_f= 32 m=n_f d_c= 64 D_c=2048 | acc=0.993
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m=  1 (d_c= 64) | acc=0.208
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m=  2 (d_c= 32) | acc=0.204
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m=  4 (d_c= 16) | acc=0.202
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m=  8 (d_c=  8) | acc=0.187
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m= 16 (d_c=  4) | acc=0.167
+[   114.9s]   [SHAPE] n_f=32 D_c=64 m= 32 (d_c=  2) | acc=0.141
+[   115.5s]   saved figures -> e5b_wall.png, e5b_shape_f6.png
+[   115.5s] === done in 115.3s -> /kaggle/working/repo/outputs/e5b_real_compression_shape ===
