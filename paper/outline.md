@@ -35,8 +35,13 @@ sign-rank / thresholded-separation framing. (§3 of CLAUDE.md; `src/theory/`.)
 
 ## 4. The two walls (C1)
 - **4.1 Retrieval wall.** E1: free-embedding realizability has a sharp phase transition; d*
-  grows with corpus (8→16 as n_d 40→320). E4 (real): mxbai-large on SciFact plateaus by
-  d≈512 — the top half of a 1024-d production embedding is wasted.
+  grows with corpus (E1c: 8→11 across n_d 40→400, sub-log). E4 (real): mxbai-large on SciFact
+  plateaus by d≈512 — the top half of a 1024-d production embedding is wasted. **Generality
+  (E4b/c/d):** the wall replicates on a 2nd MRL embedder (arctic, 97% of full recall by d=256),
+  a 2nd dataset (FiQA, 92% by d=256), and under **PCA** truncation (bge, saturates at d=256 =
+  98.5%) — so it is not a Matryoshka-ordering artifact. **Canonical (E8/LIMIT):** on Weller et
+  al.'s 50k adversarial set, three embedder families all collapse to recall@100 ≈ 3–8% — the
+  paradigm's wall on the field's own benchmark, the strongest single piece of C1 evidence.
 - **4.2 Compression wall.** E2: slot-memory recall has the same-form wall; D_c* ≈ 2·n_f. E5
   (real): a single 1024-d embedding holds ~1 fact (0.98→0.20, n_f 1→16). E5b: multi-token
   compression recovers capacity (→0.99) with a per-slot width floor.
@@ -47,11 +52,14 @@ sign-rank / thresholded-separation framing. (§3 of CLAUDE.md; `src/theory/`.)
 ## 5. Compounding (C2)
 - **5.1 Theory / independent baseline.** Under independent stage errors, pipeline =
   recall_R(d_r)·recall_C(D_c); composing two sub-full recalls underperforms either at full B.
-- **5.2 Dependence (E3b).** Sign of the deviation from the product is set by the
-  retrieval↔compression hardness correlation: anti-correlated → super-multiplicative;
-  aligned → redundant. Bounded by Fréchet. Frames an empirical question (ρ in real corpora).
+- **5.2 Dependence (E3b) + measured ρ (E7).** Sign of the deviation from the product is set by
+  the retrieval↔compression hardness correlation: anti-correlated → super-multiplicative;
+  aligned → redundant; bounded by Fréchet. **E7 measures it on a real pipeline: ρ_phi ≈ +0.009
+  ≈ 0**, and the copula reproduces observed end-to-end recall to ~0.001 (product law). So real
+  RAG defaults to the **multiplicative** regime — compounding is real and equals p_R·p_C; the
+  super-multiplicative regime needs adversarial anti-correlation (left as the open question).
 - **5.3 Real end-to-end (E6).** One corpus, real retrieval + real compression sharing B:
-  large compounding gap at tight budget (≈0.35 at B=128 in smoke), shrinking as B grows.
+  compounding gap **0.392 at B=128** (stages 0.63/0.89 alone → pipeline 0.234), shrinking as B grows.
 
 ## 6. Budget-optimal allocation (C3)
 - E3: optimal split = fund retrieval to its wall, pour the rest into compression; d_r* ≈ wall.
@@ -59,10 +67,22 @@ sign-rank / thresholded-separation framing. (§3 of CLAUDE.md; `src/theory/`.)
   starves — deployed configs are off the frontier. E6: interior-optimal split on real models.
 - Actionable recipe: measure each wall, allocate B accordingly; respect the per-slot width floor.
 
+## 6b. The escape and its scope (C4 / C4b)
+- **Free-vector (C4):** routed facet-specialized lenses escape the single-vector wall at half
+  the budget (d*=12 vs 24); crucially it is *specialization + routing*, not multi-vector per se —
+  generic MaxSim multiview is worse than a single vector (d*=48).
+- **Real encoders (C4b) — honest negative:** the escape does NOT transfer. On mxbai (10 facets)
+  a single *learned* low-rank projection ties routed lenses (both d*=40) and leads at tight
+  budgets; generic multiview is far worse (d*=320). Mechanism: a strong pretrained encoder has
+  already spent capacity linearizing the facets, so one projection extracts them and routing is
+  redundant. **Takeaway: on real systems the lever is allocation (C3), not multi-view.** This
+  scopes the method honestly and keeps the paper's spine C1+C2+C3.
+
 ## 7. Discussion / limitations
-- Free-vector = best case; real encoders do worse. F6 scope. Single-task synthetic corpora for
-  controlled compounding; ρ-in-the-wild left open. Generative soft-token compression (F11) needs
-  a large training budget — we use a probe to isolate capacity.
+- Free-vector = best case; real encoders do worse. F6 scope. C4's escape is worst-case-only
+  (C4b: no real-encoder transfer). Single-task synthetic corpora for controlled compounding;
+  E7 measures ρ≈0 on a benign corpus but ρ under *adversarial* pressure is left open. Generative
+  soft-token compression (F11) needs a large training budget — we use a probe to isolate capacity.
 
 ## 8. Reproducibility
 All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`; results in
@@ -70,26 +90,36 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
 
 ---
 
-## Results table (fill final mxbai numbers from outputs/)
+## Results table (all numbers final, from outputs/)
 | Claim | Synthetic | Real model |
 |---|---|---|
-| Retrieval wall (C1) | E1 | E4 (mxbai/SciFact) |
+| Retrieval wall (C1) | E1 | E4 mxbai/SciFact; **E4b arctic/SciFact; E4c mxbai/FiQA; E4d bge/PCA**; **E8 LIMIT ×3 embedders** |
 | Compression wall (C1) | E2 | E5 / E5b (mxbai) |
 | Shape effect F6 (+scope) | E2 | E5b (boundary) |
-| Compounding (C2) | E3, E3b | E6 |
+| Compounding (C2) | E3, E3b | E6; **E7 (ρ≈0 measured + copula validated)** |
 | Allocation (C3) | E3 | E6 |
-| Facet-lens escape (C4) | C4 (d*=12 vs 24; routing > generic multiview) | — (real-encoder version TODO) |
+| Facet-lens escape (C4) | C4 (d*=12 vs 24; routing > generic multiview) | **C4b: does NOT transfer — single ties routed lenses (d*=40) on mxbai (scoped negative)** |
 
 ## Headline numbers (final, from outputs/)
 - Retrieval wall: mxbai/SciFact recall@10 0.09→0.87, **d=512 ≡ d=1024** (top half wasted).
+- **Generality:** arctic/SciFact 0.04→0.82 (~97% by d=256); mxbai/FiQA 0.03→0.65 (92% by d=256);
+  **bge under PCA saturates at d=256 (98.5% of full)** — the wall is not an MRL-ordering artifact.
+- **LIMIT (canonical adversarial, 50k docs, 2 gold/query):** recall@100 = **mxbai 2.8% / arctic
+  8.2% / bge 4.5%** — three embedder families fail; the paradigm's wall on the field's own benchmark.
 - Compression: single 1024-d vector holds ~1 fact (0.98→0.20); **multi-token recovers to 0.99**.
 - Compounding (real, E6): **B=128 gap 0.392** (stages 0.63/0.89 alone → pipeline 0.234, opt 64:64).
+- **Measured ρ (E7, mxbai): ρ_phi ≈ +0.009 ≈ 0**; observed pipeline = product law to ~0.001 →
+  real RAG is **multiplicative**, so C3's allocation applies cleanly.
+- **Facet-lens (C4b, mxbai): single & routed lenses tie at d*=40**; the free-vector escape does
+  not transfer to strong real encoders (honest scope; the practical lever is allocation, not multi-view).
 
 ## TODO before submission
-- [x] E6 mxbai numbers in. Next: make the 4 headline figures publication-grade.
-- [ ] A second embedder + a harder retrieval set (LIMIT) for the retrieval wall (generality).
-- [ ] Formalize C1 bound (or present as rigorous empirical characterization + mechanism).
-- [x] C4 facet-lens escape demonstrated (free-vector): d*=12 vs single 24; routing > generic
-      multiview. TODO: a real-encoder facet-lens (specialize lenses on entity/numeric/etc.).
-- [ ] (Stretch) measure ρ for a real retriever+compressor on a shared benchmark (F10).
-- [ ] Write LaTeX in `paper/`; port figures from `outputs/`.
+- [x] E6 mxbai numbers in.
+- [x] Generality: 2nd embedder (arctic) + 2nd dataset (FiQA) + PCA (bge) + canonical LIMIT — DONE.
+- [x] ρ measured for a real retriever+compressor (E7): ρ≈0, copula validated (closes F10).
+- [x] Real-encoder facet-lens (C4b): DONE — honest negative (escape does not transfer; scopes C4).
+- [x] C4 facet-lens escape (free-vector): d*=12 vs 24; routing > generic multiview.
+- [ ] **Make the 5 headline figures publication-grade** (E1/E4 wall, E8 LIMIT bars, E6 allocation,
+      E7 ρ-validation, C4/C4b escape-and-scope).
+- [ ] Present C1 as a rigorous empirical characterization + the misalignment mechanism (no closed form).
+- [ ] **Write LaTeX in `paper/`; port figures from `outputs/`** — the experimental program is complete.

@@ -329,3 +329,48 @@ R²=0.81) on free vectors — a quotable law that makes the C3 allocation recipe
 
 Net: pushing 8 configs (c4b, e1c, e4b/c/d, e7, e8 small/full). After Kaggle returns results,
 finalize findings F15–F18 and the paper is write-ready.
+
+## 2026-07-01 (later) — All 8 Kaggle runs back: the generality program is complete
+
+Every queued experiment returned. Headline outcomes, with the honest negatives kept:
+
+**Generality of the retrieval wall (F15) — SUPPORTED on three independent axes.**
+- 2nd embedder: arctic-embed-m (768d) on SciFact ramps recall@10 0.04→0.82, ~97% of full by d=256.
+- 2nd dataset: mxbai on FiQA (domain shift) ramps 0.03→0.65, 92% of full by d=256.
+- 2nd truncation method: bge-large under **PCA** (optimal linear projection, not Matryoshka)
+  saturates at **d=256** (0.847 = 98.5% of full; the top 768 dims add 0.013). This is the
+  cleanest wall and it kills the "your wall is just an MRL ordering artifact" objection dead.
+
+**Canonical adversarial data (F16) — SUPPORTED, 3 embedder families.** On Weller et al.'s full
+LIMIT (50k docs, 2 gold/query), recall@100 = mxbai 2.8%, arctic 8.2%, bge 4.5% — all
+catastrophic, matching the paper's "<20%" for frontier models (our smaller models do worse).
+That three different families fail consistently shows it is the single-vector *paradigm's*
+limit, not a model quirk. This is our strongest single piece of C1 evidence: real models, real
+adversarial data, the field's own benchmark.
+
+**Real ρ (F17, closes F10) — SUPPORTED.** mxbai retriever+compressor on the shared corpus:
+mean ρ_phi = +0.009 ≈ 0. The E3b copula reproduces observed pipeline recall to ~0.001
+(observed {0.234, 0.443, 0.555} vs product {0.227, 0.439, 0.555}). So real RAG defaults to the
+**multiplicative** regime — compounding is real and equals p_R·p_C, which is exactly the case
+the allocation law (C3) is built on. Super-multiplicative compounding needs anti-correlated
+hardness, which we do not see by default; whether adversarial inputs induce it is left open.
+
+**Real-encoder facet-lens (F18) — an honest NEGATIVE that sharpens the paper.** On mxbai (10
+facets), a single *learned* low-rank projection ties routed facet-lenses (both reach mAP≥0.9 at
+d=40) and actually *leads* at tight budgets (d=20: 0.735 vs 0.581); generic multiview is far
+worse (d*=320). The free-vector escape (C4: d*=12 vs 24) is a worst-case sign-rank phenomenon —
+it does **not** transfer to strong real encoders, because a powerful pretrained encoder has
+already spent capacity linearizing the facets, so one projection extracts them and routing is
+redundant. Takeaway for the paper: the practical lever is **allocation (C3)**, not multi-view.
+C4 becomes a scoped "when does the escape help?" section; the spine is C1+C2+C3.
+
+**Scaling fit (F3) — refuted; F2 reconfirmed.** The d/n_d sub-critical law does not hold
+(R²=0.18). But d* does grow with corpus size (8→11 as n_d 40→400, both pattern families),
+slowly (sub-log; b≈0.16–0.18) and damped by the fixed 1500-query cap thinning constraints.
+We drop the closed-form claim and keep the qualitative one, which is all C3 needs.
+
+**Status: the experimental program is COMPLETE.** C1 (walls) is now validated on free vectors,
+three real embedder families, two datasets, PCA truncation, AND the canonical LIMIT set. C2
+(compounding) and C3 (allocation) hold synthetically and end-to-end on real models, with ρ
+measured (≈0, multiplicative). C4 (escape) is demonstrated in the worst case and honestly scoped
+out of the real-encoder regime. The research is ready to be written.
