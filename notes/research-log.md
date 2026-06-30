@@ -51,3 +51,47 @@ compression stage, not just a vibe.
    swap in a real small soft-compressor (xRAG/GIST-style) to confirm the effect survives
    contact with a trained model.
 3. Only after E1+E2 are both clean do we compose them for **E3** (the compounding headline).
+
+## 2026-06-30 — Compression has its own wall, and a surprising shape effect (E2)
+
+First experiment run by the **autonomous loop end-to-end**: I pushed code+config only,
+Kaggle ran it on GPU (device=cuda, ~6 min), and pushed results back — the pipeline works.
+
+**What we did.** Built the compression analog of the E1 primitive: model soft tokens as
+attention-read slot memory (m slots × d_c dims, total code `D_c = m·d_c`), store n_f
+key→value facts per "passage", and measure best-case associative recall. This is the C1
+test: does compression have a capacity wall of the *same form* as retrieval?
+
+**Finding 1 — yes, compression has a wall (C1 supported).** Critical code size `D_c*`
+(recall ≥ 0.95) grows ~linearly with content: `{n_f=16 → 32, 32 → 64, 64 → 128}` — a clean
+doubling, i.e. `D_c* ≈ 2·n_f` (n_f=128 is borderline at the 0.95 bar; by strict
+all-facts-perfect recall it needs ~256). 3 seeds, low variance. So compression is a genuine
+*second* fixed-dimensional bottleneck with the same geometry as retrieval. One nuance worth
+keeping: the compression transition is **softer/more graded** than retrieval's sharp
+phase-snap in E1 — same scaling law, gentler knee.
+
+**Finding 2 — capacity is NOT shape-invariant (surprising, and useful).** At a *fixed*
+budget D_c=128, recall depends strongly on how you split it into (slots m × width d_c). It
+peaks at an interior point (m≈4–16, recall ~1.0) and **collapses to near-chance at both
+extremes**: one fat token (m=1, d_c=128 → 0.31) and many thin tokens (m=128, d_c=1 → 0.36)
+both fail. Mechanistically, m=1 gives attention nothing to select among (softmax over one
+slot is a no-op), so a single soft token can't support content-based read-out of many
+facts; thin slots can't be told apart. **Implication:** popular single-token compressors
+(xRAG-style) sit at the bad end of this curve for multi-fact passages — this is a concrete,
+publishable observation and the empirical seed of the allocation law (C3).
+
+**Honest caveat.** The m=1 collapse is probably *amplified* by our toy reader, whose
+attention is over slots only. In a real LLM, soft tokens are attended jointly with the
+query tokens, so m=1 is less degenerate there. The interior optimum and the thin-slot
+collapse are the robust parts; the exact low-m behaviour must be re-checked with a real
+compressor later. (Logged so we don't over-claim.)
+
+**Probable next steps.**
+1. **E3 — the headline (C2), designed as a shared-budget composition.** Give retrieval and
+   compression a *single* total budget `B`. Standalone retrieval with dim=B succeeds;
+   standalone compression with D_c=B succeeds; but the pipeline must *split* B into
+   `d_r + D_c`, and if the retrieval-relevant and answer-relevant features are misaligned,
+   neither stage gets enough → the pipeline fails on the *union* of each stage's hard items.
+   Compounding = `best_split recall < min(standalone_R, standalone_C)`. This makes C2 (the
+   compounding finding) and C3 (the optimal split) fall out of one experiment.
+2. Carry the E2 split-invariance forward: the interior optimum is the C3 frontier in miniature.
