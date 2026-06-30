@@ -1,0 +1,16 @@
+# E4 — Real-model retrieval wall (first real-model experiment; tests F9 for retrieval).
+# Embeds BEIR/SciFact with a Matryoshka embedder and truncates across dimensions to see
+# whether real embeddings show the E1 wall. Kaggle-first: NO results committed locally.
+name: e4_real_retrieval_wall
+experiment: e4_real_retrieval_wall
+seed: 0
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1     # 1024-d, Matryoshka, standard ST API
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  dataset: scifact
+  split: test
+  dims: [8, 16, 32, 64, 128, 256, 512, 1024]
+  k: 10
+  max_docs: 0          # full corpus (~5k docs)
+  saturation_frac: 0.98
