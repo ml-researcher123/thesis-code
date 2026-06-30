@@ -32,7 +32,8 @@ def complement_indices(pos_idx: torch.Tensor, n_d: int) -> torch.Tensor:
     constant per-row count and reshapes cleanly.
     """
     n_q, k = pos_idx.shape
-    mask = torch.ones(n_q, n_d, dtype=torch.bool)
+    # build the mask on pos_idx's device so scatter_ with a CUDA index works on GPU
+    mask = torch.ones(n_q, n_d, dtype=torch.bool, device=pos_idx.device)
     mask.scatter_(1, pos_idx, False)
     neg = mask.nonzero(as_tuple=False)[:, 1].reshape(n_q, n_d - k)
     return neg

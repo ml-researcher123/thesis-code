@@ -95,3 +95,14 @@ compressor later. (Logged so we don't over-claim.)
    Compounding = `best_split recall < min(standalone_R, standalone_C)`. This makes C2 (the
    compounding finding) and C3 (the optimal split) fall out of one experiment.
 2. Carry the E2 split-invariance forward: the interior optimum is the C3 frontier in miniature.
+
+## 2026-06-30 — The loop caught a GPU-only bug (process note)
+
+E3's first Kaggle run failed fast: a latent device bug in the retrieval primitive (a mask
+built on CPU while indices were on CUDA). It hid because E1 was run *locally on CPU* and E2
+uses different code, so E3 was the first time `fit_capacity` touched a real GPU. Worth
+noting for two reasons: (1) the autonomous loop behaved exactly as designed — it pushed a
+`FAILED.txt` with the traceback instead of silently stalling, so I could diagnose it next
+turn; (2) the lesson — I can't run CUDA locally, so device-correctness must be by
+construction. Audited every tensor-creation site; this was the only offender. Fixed,
+hardened the runner to clear stale failure markers, re-queued E3.

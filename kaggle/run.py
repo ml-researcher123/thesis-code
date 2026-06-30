@@ -60,6 +60,11 @@ def main() -> int:
         print(f"[run] '{name}' already has results.json — skipping (use --force to rerun)")
         return 0
 
+    # clear a stale failure marker from a previous crashed attempt
+    stale_failed = os.path.join(outdir, "FAILED.txt")
+    if os.path.exists(stale_failed):
+        os.remove(stale_failed)
+
     log = Logger(os.path.join(outdir, "run.log"))
     log(f"=== run '{name}' ===")
     log(f"host={platform.node()} python={platform.python_version()} config={args.config}")
