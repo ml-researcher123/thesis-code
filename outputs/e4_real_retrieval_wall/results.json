@@ -1,0 +1,73 @@
+{
+  "experiment": "e4_real_retrieval_wall",
+  "config_params": {
+    "model": "mixedbread-ai/mxbai-embed-large-v1",
+    "query_prompt": "Represent this sentence for searching relevant passages: ",
+    "dataset": "scifact",
+    "split": "test",
+    "dims": [
+      8,
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024
+    ],
+    "k": 10,
+    "max_docs": 0,
+    "saturation_frac": 0.98
+  },
+  "model": "mixedbread-ai/mxbai-embed-large-v1",
+  "full_dim": 1024,
+  "dataset": "scifact",
+  "n_docs": 5183,
+  "n_queries": 300,
+  "curve": {
+    "8": {
+      "recall_at_k": 0.0915,
+      "ndcg_at_k": 0.05441869677907046
+    },
+    "16": {
+      "recall_at_k": 0.3252222222222222,
+      "ndcg_at_k": 0.21708512771573757
+    },
+    "32": {
+      "recall_at_k": 0.5710555555555555,
+      "ndcg_at_k": 0.42793944648212556
+    },
+    "64": {
+      "recall_at_k": 0.7034444444444444,
+      "ndcg_at_k": 0.598236064483575
+    },
+    "128": {
+      "recall_at_k": 0.7997777777777778,
+      "ndcg_at_k": 0.6701725786955961
+    },
+    "256": {
+      "recall_at_k": 0.8275555555555555,
+      "ndcg_at_k": 0.6932117958706425
+    },
+    "512": {
+      "recall_at_k": 0.8715555555555556,
+      "ndcg_at_k": 0.7277032711615689
+    },
+    "1024": {
+      "recall_at_k": 0.8715555555555556,
+      "ndcg_at_k": 0.7388297072963923
+    }
+  },
+  "saturation_dim": 512,
+  "saturation_frac": 0.98,
+  "figure": "e4_real_retrieval_wall.png",
+  "_meta": {
+    "name": "e4_real_retrieval_wall",
+    "experiment": "e4_real_retrieval_wall",
+    "seconds": 113.55,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "02926671b08b",
+    "finished_at": "2026-06-30T13:35:27"
+  }
+}

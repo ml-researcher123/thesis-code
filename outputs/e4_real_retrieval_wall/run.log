@@ -1,0 +1,16 @@
+[     0.0s] === run 'e4_real_retrieval_wall' ===
+[     0.0s] host=02926671b08b python=3.12.13 config=/kaggle/working/repo/configs/e4_real_retrieval_wall.yaml
+[     0.2s] device=cuda seed=0
+[    23.3s] E4 real retrieval wall | model=mixedbread-ai/mxbai-embed-large-v1 dataset=scifact dims=[8, 16, 32, 64, 128, 256, 512, 1024] k=10
+[    25.7s]   corpus=5183 queries=300
+[    32.8s]   model full dim=1024; eval dims=[8, 16, 32, 64, 128, 256, 512, 1024]
+[   113.1s]   d=    8 | recall@10=0.091 ndcg@10=0.054
+[   113.1s]   d=   16 | recall@10=0.325 ndcg@10=0.217
+[   113.1s]   d=   32 | recall@10=0.571 ndcg@10=0.428
+[   113.2s]   d=   64 | recall@10=0.703 ndcg@10=0.598
+[   113.2s]   d=  128 | recall@10=0.800 ndcg@10=0.670
+[   113.2s]   d=  256 | recall@10=0.828 ndcg@10=0.693
+[   113.3s]   d=  512 | recall@10=0.872 ndcg@10=0.728
+[   113.4s]   d= 1024 | recall@10=0.872 ndcg@10=0.739
+[   113.8s]   saved figure -> e4_real_retrieval_wall.png  (saturation d≈512)
+[   113.8s] === done in 113.6s -> /kaggle/working/repo/outputs/e4_real_retrieval_wall ===
