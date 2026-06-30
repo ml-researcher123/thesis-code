@@ -106,3 +106,37 @@ noting for two reasons: (1) the autonomous loop behaved exactly as designed — 
 turn; (2) the lesson — I can't run CUDA locally, so device-correctness must be by
 construction. Audited every tensor-creation site; this was the only offender. Fixed,
 hardened the runner to clear stale failure markers, re-queued E3.
+
+## 2026-06-30 — The headline holds: budgets compound, and an allocation law (E3)
+
+The composed retrieve-then-compress pipeline under a shared budget B = d_r + D_c, run on
+GPU. Numbers verified by hand against the E1/E2 curves (retrieval wall at d=48, compression
+ramps slowly to ~1.0 by D_c~160).
+
+**Finding — compounding is real and largest when you most want efficiency.** At a tight
+budget B=64, each stage *alone* given the full B succeeds (retrieval 1.00, compression
+0.95), yet the best budget-split pipeline reaches only **0.559** — a **0.39 compounding
+gap**. The gap then shrinks monotonically as the budget loosens: 0.39 (B=64) → 0.11 (96) →
+0.03 (128) → 0.008 (160) → 0.001 (192). So the two fixed-d bottlenecks compound precisely
+in the tight-budget regime that compression exists to serve; with ample budget they stop
+interfering. This is the C2 statement (independent-error version).
+
+**Finding — a crisp allocation law (C3).** The optimal split is not 50/50 and not
+"everything to the embedder." It is **fund retrieval exactly to its wall, pour the rest
+into compression**: d_r* = 48 (= the retrieval wall) for every B ≥ 96, with D_c* = B − 48.
+Below the wall (B=64) it's forced to 32:32 and both stages starve. This directly indicts
+the deployed habit (embedding dim ~768–1024 — far past its wall, wasted — plus a 1–8 token
+compressor — starved): real systems sit on the wrong side of this frontier.
+
+**Honest limit of v1.** This uses the *optimistic* independent-error composition
+(pipeline = recall_R · recall_C). It already shows compounding, but a reviewer can call
+budget-splitting "expected." The genuinely surprising claim — that misaligned bottlenecks
+compound **super-multiplicatively** (pipeline < recall_R · recall_C) — needs correlated
+example hardness. That's the next experiment.
+
+**Next — E3b (the non-obvious core).** Faithful two-bottleneck architecture, but items have
+*anti-correlated* hardness: some are retrieval-easy/answer-hard, others
+retrieval-hard/answer-easy. Each stage's marginal recall stays high (each handles its easy
+half), but the pipeline needs BOTH, so it fails on the union → end-to-end falls *below*
+recall_R · recall_C. If that holds, the compounding is a real interference effect, not just
+budget division.
