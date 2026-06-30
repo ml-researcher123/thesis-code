@@ -1,0 +1,27 @@
+name: e1_retrieval_capacity
+experiment: e1_retrieval_capacity
+seed: 0
+verbose: false
+params:
+  pattern: all_pairs
+  k: 2
+  dims:
+  - 2
+  - 4
+  - 8
+  - 16
+  - 32
+  - 64
+  n_d_list:
+  - 10
+  - 20
+  - 40
+  seeds:
+  - 0
+  - 1
+  - 2
+  max_queries: 2000
+  steps: 600
+  lr: 0.05
+  margin: 1.0
+  realize_thresh: 0.99

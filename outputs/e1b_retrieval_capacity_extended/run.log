@@ -1,0 +1,22 @@
+[     0.0s] === run 'e1b_retrieval_capacity_extended' ===
+[     0.0s] host=NAYAN-COMP-01 python=3.10.4 config=configs/e1b_retrieval_capacity_extended.yaml
+[     0.0s] device=cpu seed=0
+[     0.0s] E1 retrieval capacity | dims=[4, 8, 16, 32] n_d=[40, 80, 160, 320] seeds=[0, 1] pattern=all_pairs k=2
+[     4.5s]   n_d= 40 dim=  4 | realizability=0.381+-0.051 recall@k=0.561 loss=0.1388
+[     7.1s]   n_d= 40 dim=  8 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0009
+[     9.2s]   n_d= 40 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[    11.4s]   n_d= 40 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    17.6s]   n_d= 80 dim=  4 | realizability=0.148+-0.007 recall@k=0.319 loss=0.1507
+[    25.3s]   n_d= 80 dim=  8 | realizability=0.993+-0.001 recall@k=0.996 loss=0.0031
+[    31.6s]   n_d= 80 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[    37.8s]   n_d= 80 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    50.2s]   n_d=160 dim=  4 | realizability=0.068+-0.001 recall@k=0.187 loss=0.1386
+[    63.5s]   n_d=160 dim=  8 | realizability=0.978+-0.001 recall@k=0.989 loss=0.0035
+[    74.7s]   n_d=160 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[    83.7s]   n_d=160 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[   103.1s]   n_d=320 dim=  4 | realizability=0.039+-0.007 recall@k=0.117 loss=0.0948
+[   122.9s]   n_d=320 dim=  8 | realizability=0.974+-0.005 recall@k=0.987 loss=0.0027
+[   138.9s]   n_d=320 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[   157.6s]   n_d=320 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[   158.1s]   saved figure -> C:\Users\Admin\Desktop\research-ai\outputs\e1b_retrieval_capacity_extended\e1_capacity_wall.png
+[   158.1s] === done in 158.0s -> C:\Users\Admin\Desktop\research-ai\outputs\e1b_retrieval_capacity_extended ===

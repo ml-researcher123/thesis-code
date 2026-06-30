@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Large artifacts — these belong on HF Hub / Kaggle Datasets, NOT git
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+*.npy
+*.npz
+*.faiss
+*.index
+embeddings/
+checkpoints/
+data/raw/
+data/cache/
+.cache/
+hf_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keep: outputs/ (results.json, summary.md, figures, logs) IS committed — it's the
+# autonomous loop's product that Claude reads back. Do not ignore it.

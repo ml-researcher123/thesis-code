@@ -1,0 +1,18 @@
+# E1 — Retrieval capacity wall (reproduce & extend Weller et al. 2508.21038)
+# Validates the free-embedding measurement harness before building E2/E3 on it.
+name: e1_retrieval_capacity
+experiment: e1_retrieval_capacity
+seed: 0
+verbose: false
+
+params:
+  pattern: all_pairs        # adversarial: every doc pair is some query's gold set (k=2)
+  k: 2
+  dims: [2, 4, 8, 16, 32, 64]
+  n_d_list: [10, 20, 40]    # corpus sizes; d* should grow with these
+  seeds: [0, 1, 2]
+  max_queries: 2000         # cap sampled pairs for large n_d
+  steps: 600
+  lr: 0.05
+  margin: 1.0
+  realize_thresh: 0.99

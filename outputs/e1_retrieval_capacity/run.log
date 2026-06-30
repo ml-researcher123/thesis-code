@@ -1,0 +1,24 @@
+[     0.0s] === run 'e1_retrieval_capacity' ===
+[     0.0s] host=NAYAN-COMP-01 python=3.10.4 config=configs/e1_retrieval_capacity.yaml
+[     0.1s] device=cpu seed=0
+[     0.1s] E1 retrieval capacity | dims=[2, 4, 8, 16, 32, 64] n_d=[10, 20, 40] seeds=[0, 1, 2] pattern=all_pairs k=2
+[     6.2s]   n_d= 10 dim=  2 | realizability=0.222+-0.000 recall@k=0.493 loss=0.4891
+[     8.3s]   n_d= 10 dim=  4 | realizability=0.933+-0.000 recall@k=0.967 loss=0.0207
+[    10.3s]   n_d= 10 dim=  8 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[    11.8s]   n_d= 10 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    13.6s]   n_d= 10 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    15.2s]   n_d= 10 dim= 64 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    17.0s]   n_d= 20 dim=  2 | realizability=0.086+-0.002 recall@k=0.227 loss=0.5617
+[    19.1s]   n_d= 20 dim=  4 | realizability=0.781+-0.055 recall@k=0.861 loss=0.0597
+[    20.9s]   n_d= 20 dim=  8 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0002
+[    23.6s]   n_d= 20 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    26.6s]   n_d= 20 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    29.4s]   n_d= 20 dim= 64 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    34.5s]   n_d= 40 dim=  2 | realizability=0.024+-0.004 recall@k=0.094 loss=0.5879
+[    41.0s]   n_d= 40 dim=  4 | realizability=0.465+-0.057 recall@k=0.624 loss=0.1224
+[    46.9s]   n_d= 40 dim=  8 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0006
+[    51.9s]   n_d= 40 dim= 16 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0001
+[    57.8s]   n_d= 40 dim= 32 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    63.9s]   n_d= 40 dim= 64 | realizability=1.000+-0.000 recall@k=1.000 loss=0.0000
+[    64.7s]   saved figure -> C:\Users\Admin\Desktop\research-ai\outputs\e1_retrieval_capacity\e1_capacity_wall.png
+[    64.7s] === done in 64.6s -> C:\Users\Admin\Desktop\research-ai\outputs\e1_retrieval_capacity ===

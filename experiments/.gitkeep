@@ -1,0 +1,2 @@
+# Reserved for per-run snapshots if an experiment needs more than outputs/<name>/.
+# Primary artifacts live in outputs/<name>/. Kept in git so the directory exists.
