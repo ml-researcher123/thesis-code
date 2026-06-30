@@ -1,0 +1,21 @@
+name: e4b_arctic_scifact
+experiment: e4_real_retrieval_wall
+seed: 0
+params:
+  model: Snowflake/snowflake-arctic-embed-m-v1.5
+  query_prompt: 'Represent this sentence for searching relevant passages: '
+  dataset: scifact
+  split: test
+  dims:
+  - 8
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  - 384
+  - 768
+  k: 10
+  max_docs: 0
+  truncation: matryoshka
+  saturation_frac: 0.98

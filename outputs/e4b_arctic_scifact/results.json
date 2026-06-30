@@ -1,0 +1,74 @@
+{
+  "experiment": "e4_real_retrieval_wall",
+  "config_params": {
+    "model": "Snowflake/snowflake-arctic-embed-m-v1.5",
+    "query_prompt": "Represent this sentence for searching relevant passages: ",
+    "dataset": "scifact",
+    "split": "test",
+    "dims": [
+      8,
+      16,
+      32,
+      64,
+      128,
+      256,
+      384,
+      768
+    ],
+    "k": 10,
+    "max_docs": 0,
+    "truncation": "matryoshka",
+    "saturation_frac": 0.98
+  },
+  "model": "Snowflake/snowflake-arctic-embed-m-v1.5",
+  "full_dim": 768,
+  "dataset": "scifact",
+  "n_docs": 5183,
+  "n_queries": 300,
+  "curve": {
+    "8": {
+      "recall_at_k": 0.035833333333333335,
+      "ndcg_at_k": 0.01948628530765241
+    },
+    "16": {
+      "recall_at_k": 0.17844444444444443,
+      "ndcg_at_k": 0.11855280341929604
+    },
+    "32": {
+      "recall_at_k": 0.3845,
+      "ndcg_at_k": 0.2901945007736835
+    },
+    "64": {
+      "recall_at_k": 0.5909444444444444,
+      "ndcg_at_k": 0.4833723181768892
+    },
+    "128": {
+      "recall_at_k": 0.7452222222222222,
+      "ndcg_at_k": 0.6301838321548617
+    },
+    "256": {
+      "recall_at_k": 0.8237777777777777,
+      "ndcg_at_k": 0.6980590392833581
+    },
+    "384": {
+      "recall_at_k": 0.8242222222222222,
+      "ndcg_at_k": 0.702647919145603
+    },
+    "768": {
+      "recall_at_k": 0.8458888888888889,
+      "ndcg_at_k": 0.7158585041663418
+    }
+  },
+  "saturation_dim": 768,
+  "saturation_frac": 0.98,
+  "figure": "e4_real_retrieval_wall.png",
+  "_meta": {
+    "name": "e4b_arctic_scifact",
+    "experiment": "e4_real_retrieval_wall",
+    "seconds": 149.51,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "d856c35f3a76",
+    "finished_at": "2026-06-30T20:42:35"
+  }
+}
