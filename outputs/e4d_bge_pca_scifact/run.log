@@ -1,0 +1,16 @@
+[     0.0s] === run 'e4d_bge_pca_scifact' ===
+[     0.0s] host=d856c35f3a76 python=3.12.13 config=/kaggle/working/repo/configs/e4d_bge_pca_scifact.yaml
+[     0.2s] device=cuda seed=0
+[     8.3s] E4 real retrieval wall | model=BAAI/bge-large-en-v1.5 dataset=scifact dims=[8, 16, 32, 64, 128, 256, 512, 1024] k=10 trunc=pca
+[    10.4s]   corpus=5183 queries=300
+[    18.7s]   model full dim=1024; eval dims=[8, 16, 32, 64, 128, 256, 512, 1024]
+[   427.5s]   d=    8 | recall@10=0.314 ndcg@10=0.191
+[   428.7s]   d=   16 | recall@10=0.487 ndcg@10=0.323
+[   430.0s]   d=   32 | recall@10=0.653 ndcg@10=0.508
+[   431.2s]   d=   64 | recall@10=0.755 ndcg@10=0.616
+[   432.5s]   d=  128 | recall@10=0.802 ndcg@10=0.681
+[   433.7s]   d=  256 | recall@10=0.847 ndcg@10=0.725
+[   435.0s]   d=  512 | recall@10=0.850 ndcg@10=0.727
+[   436.3s]   d= 1024 | recall@10=0.860 ndcg@10=0.730
+[   436.7s]   saved figure -> e4_real_retrieval_wall.png  (saturation d≈256)
+[   436.7s] === done in 436.5s -> /kaggle/working/repo/outputs/e4d_bge_pca_scifact ===
