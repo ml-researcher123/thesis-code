@@ -264,3 +264,27 @@ all validated, synthetic→real. Paper outline in `paper/outline.md`. Remaining 
 elevation (C4 facet-lens as an explicit method — E5b already partially demos the multi-view
 escape) and write-up. Minor: E6 standalone at B=384 is blank only because 384 isn't on the
 measurement grid; cosmetic.
+
+## 2026-06-30 — The escape, and what actually causes it (C4)
+
+Built the proposed method: split a fixed embedding budget into K facet-specialized low-rank
+lenses, route each query to its facet's lens. Compared against a single full-rank vector and
+a generic K-view MaxSim (ColBERT-like, no routing) at EQUAL budget, on a facet-structured
+relevance pattern.
+
+**Finding 1 — facet-lenses escape the single-vector wall.** Routed facet-lenses realize the
+pattern at critical budget **d*=12 vs single d*=24** — half the budget. So the wall (E1/E4)
+is not fundamental to the task, only to the single-vector *form*; specialization escapes it.
+
+**Finding 2 (the sharp one) — it's routing/specialization, not multi-vector per se.** Generic
+MaxSim multi-view is **worse** than a single vector (d*=48 vs 24): naively splitting into K
+views and max-combining doesn't help and can hurt (the non-smooth max is hard to optimize and
+nothing tells a query which view to trust). Only when each lens *specializes* on a facet and
+the query is *routed* to it does the escape appear. This distinguishes C4 from "multi-vector
+beats single" (known): the lever is specialization + routing.
+
+**Status — all four contributions demonstrated.** C1 (walls), C2 (compounding), C3
+(allocation), C4 (escape), each on controlled + (for C1–C3) real models. The paper is
+complete in skeleton: theory/diagnosis (a problem), an actionable allocation (what to do
+now), and a principled escape (how to do better). Remaining is write-up + generality
+(2nd embedder, LIMIT) + optionally a real-encoder facet-lens.

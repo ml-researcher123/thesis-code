@@ -78,6 +78,7 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
 | Shape effect F6 (+scope) | E2 | E5b (boundary) |
 | Compounding (C2) | E3, E3b | E6 |
 | Allocation (C3) | E3 | E6 |
+| Facet-lens escape (C4) | C4 (d*=12 vs 24; routing > generic multiview) | — (real-encoder version TODO) |
 
 ## Headline numbers (final, from outputs/)
 - Retrieval wall: mxbai/SciFact recall@10 0.09→0.87, **d=512 ≡ d=1024** (top half wasted).
@@ -88,6 +89,7 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
 - [x] E6 mxbai numbers in. Next: make the 4 headline figures publication-grade.
 - [ ] A second embedder + a harder retrieval set (LIMIT) for the retrieval wall (generality).
 - [ ] Formalize C1 bound (or present as rigorous empirical characterization + mechanism).
-- [ ] (Stretch) C4 facet-lens method as an explicit *escape*; E5b is already a partial demo.
+- [x] C4 facet-lens escape demonstrated (free-vector): d*=12 vs single 24; routing > generic
+      multiview. TODO: a real-encoder facet-lens (specialize lenses on entity/numeric/etc.).
 - [ ] (Stretch) measure ρ for a real retriever+compressor on a shared benchmark (F10).
 - [ ] Write LaTeX in `paper/`; port figures from `outputs/`.
