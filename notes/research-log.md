@@ -140,3 +140,27 @@ retrieval-hard/answer-easy. Each stage's marginal recall stays high (each handle
 half), but the pipeline needs BOTH, so it fails on the union → end-to-end falls *below*
 recall_R · recall_C. If that holds, the compounding is a real interference effect, not just
 budget division.
+
+## 2026-06-30 — Compounding has a sign, and the corpus sets it (E3b)
+
+Held the real E1/E2 marginals fixed at tight operating points and swept the
+retrieval↔compression hardness correlation rho via a Gaussian copula (copula math checked
+analytically: rho=0 reproduces the product; rho=−1 hits the Fréchet floor).
+
+**Finding — the compounding sign is conditional.** At a balanced, sub-saturated point
+(p_R=0.78, p_C=0.72), anti-correlated hardness (rho=−0.5) drives the pipeline *below* the
+independent product (0.559 → 0.515; full anti-correlation floor 0.497) — super-multiplicative.
+Aligned hardness (rho>0) lifts it *above* the product (→0.687) — failures become redundant.
+The effect is largest when both stages are balanced and sub-saturated, and vanishes when
+either saturates (32:64, p_C=0.95, barely moves). So we do **not** claim "always worse":
+whether the two bottlenecks compound super- or sub-multiplicatively is set by the sign of
+hardness correlation — a property of the corpus + the chosen retriever/compressor. The
+sharper, honest version of C2, and it raises a concrete empirical question: **what is rho
+for real systems?**
+
+**Decision — pivot to real models.** The free-vector arc (E1 wall, E2 wall + shape, E3
+budget compounding + allocation, E3b dependence) is complete and internally consistent — a
+clean best-case-geometry theory, but a toy on its own. Highest-value next step: show the
+walls and compounding survive **trained models**, and measure rho in the wild. Start with
+the cheapest real-model test — the retrieval wall with a real (Matryoshka) embedder,
+truncated across dimensions on a hard retrieval set. No training needed.
