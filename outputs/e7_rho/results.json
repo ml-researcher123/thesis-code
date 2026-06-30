@@ -1,0 +1,91 @@
+{
+  "experiment": "e7_rho",
+  "config_params": {
+    "model": "mixedbread-ai/mxbai-embed-large-v1",
+    "N": 2000,
+    "n_f": 8,
+    "points": [
+      [
+        64,
+        64
+      ],
+      [
+        96,
+        96
+      ],
+      [
+        128,
+        128
+      ]
+    ],
+    "n_query": 1500,
+    "steps": 500,
+    "lr": 0.002,
+    "key_trunc": 64,
+    "seed_data": 0
+  },
+  "model": "mixedbread-ai/mxbai-embed-large-v1",
+  "N": 2000,
+  "n_f": 8,
+  "n_query": 1500,
+  "points": [
+    {
+      "d_r": 64,
+      "D_c": 64,
+      "p_R": 0.368,
+      "p_C": 0.618,
+      "rho_phi": 0.028064249780207107,
+      "rho_margin": 0.039798257857249,
+      "observed_pipeline": 0.234,
+      "pred_independent": 0.22725,
+      "pred_with_rho": 0.231565,
+      "frechet_lo": 0.0,
+      "frechet_hi": 0.368,
+      "err_independent": 0.006750000000000006,
+      "err_with_rho": 0.0024350000000000205
+    },
+    {
+      "d_r": 96,
+      "D_c": 96,
+      "p_R": 0.546,
+      "p_C": 0.8053333333333333,
+      "rho_phi": 0.014988239048563399,
+      "rho_margin": 0.029801201876783236,
+      "observed_pipeline": 0.44266666666666665,
+      "pred_independent": 0.439495,
+      "pred_with_rho": 0.4421,
+      "frechet_lo": 0.3513333333333333,
+      "frechet_hi": 0.546,
+      "err_independent": 0.0031716666666666282,
+      "err_with_rho": 0.0005666666666666598
+    },
+    {
+      "d_r": 128,
+      "D_c": 128,
+      "p_R": 0.626,
+      "p_C": 0.89,
+      "rho_phi": -0.016336850581083927,
+      "rho_margin": 0.01267402625874856,
+      "observed_pipeline": 0.5546666666666666,
+      "pred_independent": 0.55533,
+      "pred_with_rho": 0.554,
+      "frechet_lo": 0.516,
+      "frechet_hi": 0.626,
+      "err_independent": 0.0006633333333333491,
+      "err_with_rho": 0.0006666666666665932
+    }
+  ],
+  "rho_phi_mean": 0.008905212749228859,
+  "mean_err_independent": 0.0035283333333333278,
+  "mean_err_with_rho": 0.0012227777777777578,
+  "figure": "e7_rho.png",
+  "_meta": {
+    "name": "e7_rho",
+    "experiment": "e7_rho",
+    "seconds": 25.98,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "d856c35f3a76",
+    "finished_at": "2026-06-30T20:53:42"
+  }
+}

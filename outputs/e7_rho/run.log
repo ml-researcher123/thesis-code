@@ -1,0 +1,9 @@
+[     0.0s] === run 'e7_rho' ===
+[     0.0s] host=d856c35f3a76 python=3.12.13 config=/kaggle/working/repo/configs/e7_rho.yaml
+[     0.2s] device=cuda seed=0
+[     8.3s] E7 measure rho | model=mixedbread-ai/mxbai-embed-large-v1 N=2000 n_f=8 points=[[64, 64], [96, 96], [128, 128]] device=cuda
+[    21.5s]   d_r=64 D_c=64 | p_R=0.368 p_C=0.618 rho_phi=+0.028 rho_margin=+0.040 | obs=0.234 indep=0.227 rho-pred=0.232
+[    23.7s]   d_r=96 D_c=96 | p_R=0.546 p_C=0.805 rho_phi=+0.015 rho_margin=+0.030 | obs=0.443 indep=0.439 rho-pred=0.442
+[    26.0s]   d_r=128 D_c=128 | p_R=0.626 p_C=0.890 rho_phi=-0.016 rho_margin=+0.013 | obs=0.555 indep=0.555 rho-pred=0.554
+[    26.2s]   saved figure -> e7_rho.png  (mean rho_phi=+0.009)
+[    26.2s] === done in 26.0s -> /kaggle/working/repo/outputs/e7_rho ===

@@ -1,0 +1,19 @@
+name: e7_rho
+experiment: e7_rho
+seed: 0
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  N: 2000
+  n_f: 8
+  points:
+  - - 64
+    - 64
+  - - 96
+    - 96
+  - - 128
+    - 128
+  n_query: 1500
+  steps: 500
+  lr: 0.002
+  key_trunc: 64
+  seed_data: 0
