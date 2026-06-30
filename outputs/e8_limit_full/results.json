@@ -1,0 +1,67 @@
+{
+  "experiment": "e8_limit",
+  "config_params": {
+    "variant": "full",
+    "split": "test",
+    "ks": [
+      2,
+      10,
+      100,
+      1000
+    ],
+    "trunc_dims": [],
+    "models": [
+      {
+        "name": "mixedbread-ai/mxbai-embed-large-v1"
+      },
+      {
+        "name": "Snowflake/snowflake-arctic-embed-m-v1.5",
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      },
+      {
+        "name": "BAAI/bge-base-en-v1.5",
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      }
+    ]
+  },
+  "variant": "full",
+  "n_docs": 50000,
+  "n_queries": 1000,
+  "ks": [
+    2,
+    10,
+    100,
+    1000
+  ],
+  "full_recall": {
+    "mixedbread-ai/mxbai-embed-large-v1": {
+      "2": 0.004,
+      "10": 0.01,
+      "100": 0.028,
+      "1000": 0.103
+    },
+    "Snowflake/snowflake-arctic-embed-m-v1.5": {
+      "2": 0.0085,
+      "10": 0.0235,
+      "100": 0.0815,
+      "1000": 0.2535
+    },
+    "BAAI/bge-base-en-v1.5": {
+      "2": 0.007,
+      "10": 0.0145,
+      "100": 0.045,
+      "1000": 0.163
+    }
+  },
+  "trunc_curves": {},
+  "figure": "e8_limit.png",
+  "_meta": {
+    "name": "e8_limit_full",
+    "experiment": "e8_limit",
+    "seconds": 1555.12,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "d856c35f3a76",
+    "finished_at": "2026-06-30T21:19:43"
+  }
+}
