@@ -1,0 +1,16 @@
+[     0.0s] === run 'e4c_mxbai_fiqa' ===
+[     0.0s] host=d856c35f3a76 python=3.12.13 config=/kaggle/working/repo/configs/e4c_mxbai_fiqa.yaml
+[     0.2s] device=cuda seed=0
+[     8.4s] E4 real retrieval wall | model=mixedbread-ai/mxbai-embed-large-v1 dataset=fiqa dims=[8, 16, 32, 64, 128, 256, 512, 1024] k=10 trunc=matryoshka
+[    15.5s]   corpus=15000 queries=648
+[    18.1s]   model full dim=1024; eval dims=[8, 16, 32, 64, 128, 256, 512, 1024]
+[   186.1s]   d=    8 | recall@10=0.026 ndcg@10=0.015
+[   186.3s]   d=   16 | recall@10=0.102 ndcg@10=0.080
+[   186.4s]   d=   32 | recall@10=0.238 ndcg@10=0.187
+[   186.5s]   d=   64 | recall@10=0.417 ndcg@10=0.353
+[   186.6s]   d=  128 | recall@10=0.531 ndcg@10=0.460
+[   186.8s]   d=  256 | recall@10=0.597 ndcg@10=0.524
+[   187.0s]   d=  512 | recall@10=0.629 ndcg@10=0.560
+[   187.3s]   d= 1024 | recall@10=0.651 ndcg@10=0.577
+[   187.9s]   saved figure -> e4_real_retrieval_wall.png  (saturation d≈1024)
+[   187.9s] === done in 187.7s -> /kaggle/working/repo/outputs/e4c_mxbai_fiqa ===
