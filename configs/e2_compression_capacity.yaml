@@ -1,0 +1,26 @@
+# E2 — Compression capacity wall (contribution C1, first novel result).
+# Tests whether soft-token compression has a dimension wall of the same geometric form
+# as the retrieval wall (E1), and whether the critical code size grows with content.
+# Kaggle-first: NO results committed locally; the GPU loop runs this.
+name: e2_compression_capacity
+experiment: e2_compression_capacity
+seed: 0
+verbose: false
+
+params:
+  n_f_list: [16, 32, 64, 128]       # content complexity (facts per passage)
+  m_list: [1, 2, 4, 8, 16, 32]      # slots -> D_c = m * d_c
+  d_c: 16                           # slot width
+  V: 4                              # answer classes (chance = 0.25)
+  d_key: 128                        # key dim (kept large so keys are separable)
+  P: 128                            # passages per fit
+  hidden: 64
+  steps: 1500
+  lr: 0.003
+  seeds: [0, 1, 2]
+  recall_thresh: 0.95
+
+  # split-invariance probe at fixed total code size
+  split_D_c: 128
+  split_m_list: [1, 2, 4, 8, 16, 32, 64, 128]
+  split_n_f: 64
