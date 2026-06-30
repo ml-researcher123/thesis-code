@@ -16,6 +16,7 @@ from . import (
     e5_real_compression_probe,
     e5_real_compression_wall,
     e5b_real_compression_shape,
+    e6_real_allocation,
 )
 
 REGISTRY: dict[str, Callable] = {
@@ -30,6 +31,7 @@ REGISTRY: dict[str, Callable] = {
     "e5_real_compression_wall": e5_real_compression_wall.run,
     "e5_real_compression_probe": e5_real_compression_probe.run,
     "e5b_real_compression_shape": e5b_real_compression_shape.run,
+    "e6_real_allocation": e6_real_allocation.run,
 }
 
 

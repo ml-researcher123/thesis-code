@@ -1,0 +1,19 @@
+# E6 — Real end-to-end allocation: compounding (C2) + optimal split (C3) on real components.
+# One corpus; real retrieval (truncated topic embeddings) + real multi-token compression
+# share a budget B = d_r + D_c. Kaggle-first.
+name: e6_real_allocation
+experiment: e6_real_allocation
+seed: 0
+verbose: false
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  N: 2000              # passages (similar topics -> real retrieval wall)
+  n_f: 8               # facts per passage
+  grid: [16, 32, 64, 128, 256, 512]
+  budgets: [128, 256, 384]
+  n_query: 1500
+  steps: 500
+  lr: 0.002
+  key_trunc: 64
+  seed_data: 0

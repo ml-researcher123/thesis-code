@@ -145,7 +145,8 @@ class AttnProbe(nn.Module):
         return self.out(r)
 
 
-def fit_attn_probe(Str, kvtr, ytr, Ste, kvte, yte, V, steps, lr, seed, device):
+def fit_attn_probe(Str, kvtr, ytr, Ste, kvte, yte, V, steps, lr, seed, device,
+                   return_correct=False):
     set_seed(seed)
     device = torch.device(device)
     Str = torch.tensor(Str, device=device); kvtr = torch.tensor(kvtr, device=device)
@@ -160,7 +161,10 @@ def fit_attn_probe(Str, kvtr, ytr, Ste, kvte, yte, V, steps, lr, seed, device):
         loss = F.cross_entropy(probe(Str[idx], kvtr[idx]), ytr[idx])
         opt.zero_grad(set_to_none=True); loss.backward(); opt.step()
     with torch.no_grad():
-        acc = float((probe(Ste, kvte).argmax(-1) == yte).float().mean().cpu())
+        correct = (probe(Ste, kvte).argmax(-1) == yte)
+        acc = float(correct.float().mean().cpu())
+    if return_correct:
+        return acc, correct.cpu().numpy()
     return acc
 
 
