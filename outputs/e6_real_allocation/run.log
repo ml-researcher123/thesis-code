@@ -1,0 +1,21 @@
+[     0.0s] === run 'e6_real_allocation' ===
+[     0.0s] host=3bf7ce70611d python=3.12.13 config=/kaggle/working/repo/configs/e6_real_allocation.yaml
+[     0.2s] device=cuda seed=0
+[     8.3s] E6 real allocation | model=mixedbread-ai/mxbai-embed-large-v1 N=2000 n_f=8 grid=[16, 32, 64, 128, 256, 512] device=cuda
+[    17.4s]   [R] d_r=  16 | recall_R=0.118
+[    17.4s]   [R] d_r=  32 | recall_R=0.275
+[    17.4s]   [R] d_r=  64 | recall_R=0.368
+[    17.4s]   [R] d_r= 128 | recall_R=0.626
+[    17.4s]   [R] d_r= 256 | recall_R=0.692
+[    17.4s]   [R] d_r= 512 | recall_R=0.715
+[    19.9s]   [C] D_c=  16 (d_c=2) | recall_C=0.188
+[    22.1s]   [C] D_c=  32 (d_c=4) | recall_C=0.309
+[    24.4s]   [C] D_c=  64 (d_c=8) | recall_C=0.618
+[    26.6s]   [C] D_c= 128 (d_c=16) | recall_C=0.890
+[    28.8s]   [C] D_c= 256 (d_c=32) | recall_C=0.982
+[    31.0s]   [C] D_c= 512 (d_c=64) | recall_C=0.997
+[    31.0s]   [B=128] best d_r=64:D_c=64 e2e=0.234 | standalone_R=0.626 standalone_C=0.89 gap=0.392
+[    31.0s]   [B=256] best d_r=128:D_c=128 e2e=0.555 | standalone_R=0.692 standalone_C=0.982 gap=0.1373333333333333
+[    31.0s]   [B=384] best d_r=128:D_c=256 e2e=0.615 | standalone_R=None standalone_C=None gap=None
+[    31.2s]   saved figure -> e6_allocation.png
+[    31.2s] === done in 31.0s -> /kaggle/working/repo/outputs/e6_real_allocation ===

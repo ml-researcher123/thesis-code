@@ -1,0 +1,24 @@
+name: e6_real_allocation
+experiment: e6_real_allocation
+seed: 0
+verbose: false
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  N: 2000
+  n_f: 8
+  grid:
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  budgets:
+  - 128
+  - 256
+  - 384
+  n_query: 1500
+  steps: 500
+  lr: 0.002
+  key_trunc: 64
+  seed_data: 0

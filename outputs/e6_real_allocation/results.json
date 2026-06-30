@@ -1,0 +1,114 @@
+{
+  "experiment": "e6_real_allocation",
+  "config_params": {
+    "model": "mixedbread-ai/mxbai-embed-large-v1",
+    "N": 2000,
+    "n_f": 8,
+    "grid": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "budgets": [
+      128,
+      256,
+      384
+    ],
+    "n_query": 1500,
+    "steps": 500,
+    "lr": 0.002,
+    "key_trunc": 64,
+    "seed_data": 0
+  },
+  "model": "mixedbread-ai/mxbai-embed-large-v1",
+  "N": 2000,
+  "n_f": 8,
+  "n_query": 1500,
+  "recall_R": {
+    "16": 0.118,
+    "32": 0.27466666666666667,
+    "64": 0.368,
+    "128": 0.626,
+    "256": 0.692,
+    "512": 0.7146666666666667
+  },
+  "recall_C": {
+    "16": 0.188,
+    "32": 0.30866666666666664,
+    "64": 0.618,
+    "128": 0.89,
+    "256": 0.982,
+    "512": 0.9973333333333333
+  },
+  "per_budget": {
+    "128": {
+      "splits": [
+        {
+          "d_r": 64,
+          "D_c": 64,
+          "e2e": 0.234
+        }
+      ],
+      "best": {
+        "d_r": 64,
+        "D_c": 64,
+        "e2e": 0.234
+      },
+      "standalone_R": 0.626,
+      "standalone_C": 0.89,
+      "gap": 0.392
+    },
+    "256": {
+      "splits": [
+        {
+          "d_r": 128,
+          "D_c": 128,
+          "e2e": 0.5546666666666666
+        }
+      ],
+      "best": {
+        "d_r": 128,
+        "D_c": 128,
+        "e2e": 0.5546666666666666
+      },
+      "standalone_R": 0.692,
+      "standalone_C": 0.982,
+      "gap": 0.1373333333333333
+    },
+    "384": {
+      "splits": [
+        {
+          "d_r": 128,
+          "D_c": 256,
+          "e2e": 0.6153333333333333
+        },
+        {
+          "d_r": 256,
+          "D_c": 128,
+          "e2e": 0.612
+        }
+      ],
+      "best": {
+        "d_r": 128,
+        "D_c": 256,
+        "e2e": 0.6153333333333333
+      },
+      "standalone_R": null,
+      "standalone_C": null,
+      "gap": null
+    }
+  },
+  "figure": "e6_allocation.png",
+  "_meta": {
+    "name": "e6_real_allocation",
+    "experiment": "e6_real_allocation",
+    "seconds": 31.0,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "3bf7ce70611d",
+    "finished_at": "2026-06-30T16:12:59"
+  }
+}
