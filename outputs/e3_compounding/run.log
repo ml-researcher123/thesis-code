@@ -55,3 +55,38 @@ RuntimeError: Expected all tensors to be on the same device, but got index is on
     mask.scatter_(1, pos_idx, False)
 RuntimeError: Expected all tensors to be on the same device, but got index is on cuda:0, different from other tensors on cpu (when checking argument in method wrapper_CUDA_scatter__value)
 
+[     0.0s] === run 'e3_compounding' ===
+[     0.0s] host=02926671b08b python=3.12.13 config=/kaggle/working/repo/configs/e3_compounding.yaml
+[     0.2s] device=cuda seed=0
+[     0.2s] E3 compounding | grid=[16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192] budgets=[64, 96, 128, 160, 192] seeds=[0, 1, 2] device=cuda
+[     3.9s]   [R] d_r=  16 | recall_R=0.550
+[     5.8s]   [R] d_r=  32 | recall_R=0.777
+[     7.6s]   [R] d_r=  48 | recall_R=1.000
+[     9.3s]   [R] d_r=  64 | recall_R=1.000
+[    11.1s]   [R] d_r=  80 | recall_R=1.000
+[    12.8s]   [R] d_r=  96 | recall_R=1.000
+[    14.6s]   [R] d_r= 112 | recall_R=1.000
+[    16.4s]   [R] d_r= 128 | recall_R=1.000
+[    18.2s]   [R] d_r= 144 | recall_R=1.000
+[    20.0s]   [R] d_r= 160 | recall_R=1.000
+[    21.8s]   [R] d_r= 176 | recall_R=1.000
+[    23.6s]   [R] d_r= 192 | recall_R=1.000
+[    34.0s]   [C] D_c=  16 (m= 1) | recall_C=0.314
+[    44.8s]   [C] D_c=  32 (m= 2) | recall_C=0.720
+[    55.2s]   [C] D_c=  48 (m= 3) | recall_C=0.872
+[    65.7s]   [C] D_c=  64 (m= 4) | recall_C=0.948
+[    76.3s]   [C] D_c=  80 (m= 5) | recall_C=0.969
+[    87.0s]   [C] D_c=  96 (m= 6) | recall_C=0.985
+[    97.7s]   [C] D_c= 112 (m= 7) | recall_C=0.991
+[   108.5s]   [C] D_c= 128 (m= 8) | recall_C=0.995
+[   119.1s]   [C] D_c= 144 (m= 9) | recall_C=0.997
+[   129.8s]   [C] D_c= 160 (m=10) | recall_C=0.999
+[   140.5s]   [C] D_c= 176 (m=11) | recall_C=0.999
+[   151.2s]   [C] D_c= 192 (m=12) | recall_C=0.998
+[   151.2s]   [B=64] best split d_r=32 D_c=32 pipeline=0.559 | standalone min=0.948486328125 gap=0.38906470603413057
+[   151.2s]   [B=96] best split d_r=48 D_c=48 pipeline=0.872 | standalone min=0.9853515625 gap=0.11311848958333337
+[   151.2s]   [B=128] best split d_r=48 D_c=80 pipeline=0.969 | standalone min=0.9952392578125 gap=0.02652994791666663
+[   151.2s]   [B=160] best split d_r=48 D_c=112 pipeline=0.991 | standalone min=0.9991048177083334 gap=0.0084228515625
+[   151.2s]   [B=192] best split d_r=48 D_c=144 pipeline=0.997 | standalone min=0.9983723958333334 gap=0.0010986328125
+[   151.7s]   saved figures -> e3_two_walls.png, e3_allocation.png
+[   151.7s] === done in 151.4s -> /kaggle/working/repo/outputs/e3_compounding ===
