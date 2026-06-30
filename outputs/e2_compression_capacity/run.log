@@ -1,0 +1,39 @@
+[     0.0s] === run 'e2_compression_capacity' ===
+[     0.0s] host=02926671b08b python=3.12.13 config=/kaggle/working/repo/configs/e2_compression_capacity.yaml
+[     0.3s] device=cuda seed=0
+[     0.3s] E2 compression capacity | n_f=[16, 32, 64, 128] m=[1, 2, 4, 8, 16, 32] d_c=16 V=4 P=128 seeds=[0, 1, 2] device=cuda
+[    15.3s]   n_f=  16 D_c=  16 (m=  1) | recall=0.386+-0.001 perfect=0.000 loss=1.2857
+[    26.5s]   n_f=  16 D_c=  32 (m=  2) | recall=0.953+-0.011 perfect=0.531 loss=0.1071
+[    37.7s]   n_f=  16 D_c=  64 (m=  4) | recall=0.996+-0.002 perfect=0.943 loss=0.0061
+[    48.9s]   n_f=  16 D_c= 128 (m=  8) | recall=0.999+-0.000 perfect=0.987 loss=0.0012
+[    60.1s]   n_f=  16 D_c= 256 (m= 16) | recall=0.999+-0.001 perfect=0.987 loss=0.0014
+[    71.3s]   n_f=  16 D_c= 512 (m= 32) | recall=0.998+-0.000 perfect=0.974 loss=0.0024
+[    82.3s]   n_f=  32 D_c=  16 (m=  1) | recall=0.343+-0.003 perfect=0.000 loss=1.3372
+[    93.4s]   n_f=  32 D_c=  32 (m=  2) | recall=0.866+-0.005 perfect=0.044 loss=0.3160
+[   104.8s]   n_f=  32 D_c=  64 (m=  4) | recall=0.984+-0.007 perfect=0.703 loss=0.0277
+[   115.9s]   n_f=  32 D_c= 128 (m=  8) | recall=0.998+-0.001 perfect=0.958 loss=0.0024
+[   127.2s]   n_f=  32 D_c= 256 (m= 16) | recall=0.999+-0.000 perfect=0.982 loss=0.0010
+[   138.4s]   n_f=  32 D_c= 512 (m= 32) | recall=0.998+-0.000 perfect=0.958 loss=0.0022
+[   149.1s]   n_f=  64 D_c=  16 (m=  1) | recall=0.314+-0.001 perfect=0.000 loss=1.3626
+[   160.4s]   n_f=  64 D_c=  32 (m=  2) | recall=0.720+-0.013 perfect=0.000 loss=0.6315
+[   171.6s]   n_f=  64 D_c=  64 (m=  4) | recall=0.948+-0.006 perfect=0.182 loss=0.1209
+[   182.8s]   n_f=  64 D_c= 128 (m=  8) | recall=0.995+-0.001 perfect=0.826 loss=0.0081
+[   193.8s]   n_f=  64 D_c= 256 (m= 16) | recall=0.999+-0.000 perfect=0.977 loss=0.0008
+[   205.0s]   n_f=  64 D_c= 512 (m= 32) | recall=1.000+-0.000 perfect=0.982 loss=0.0005
+[   215.9s]   n_f= 128 D_c=  16 (m=  1) | recall=0.296+-0.001 perfect=0.000 loss=1.3745
+[   227.0s]   n_f= 128 D_c=  32 (m=  2) | recall=0.594+-0.004 perfect=0.000 loss=0.8762
+[   238.3s]   n_f= 128 D_c=  64 (m=  4) | recall=0.770+-0.050 perfect=0.000 loss=0.5781
+[   249.6s]   n_f= 128 D_c= 128 (m=  8) | recall=0.950+-0.030 perfect=0.169 loss=0.1580
+[   260.9s]   n_f= 128 D_c= 256 (m= 16) | recall=0.999+-0.001 perfect=0.927 loss=0.0025
+[   272.1s]   n_f= 128 D_c= 512 (m= 32) | recall=1.000+-0.000 perfect=0.984 loss=0.0005
+[   272.1s] E2 split-invariance | fixed D_c=128 n_f=64 m in [1, 2, 4, 8, 16, 32, 64, 128]
+[   283.1s]   split m=   1 d_c= 128 (D_c=128) | recall=0.314
+[   294.2s]   split m=   2 d_c=  64 (D_c=128) | recall=0.987
+[   305.5s]   split m=   4 d_c=  32 (D_c=128) | recall=0.999
+[   316.6s]   split m=   8 d_c=  16 (D_c=128) | recall=0.995
+[   327.8s]   split m=  16 d_c=   8 (D_c=128) | recall=0.990
+[   338.7s]   split m=  32 d_c=   4 (D_c=128) | recall=0.856
+[   349.7s]   split m=  64 d_c=   2 (D_c=128) | recall=0.420
+[   360.4s]   split m= 128 d_c=   1 (D_c=128) | recall=0.355
+[   361.1s]   saved figures -> e2_compression_wall.png, e2_split_invariance.png
+[   361.1s] === done in 360.8s -> /kaggle/working/repo/outputs/e2_compression_capacity ===
