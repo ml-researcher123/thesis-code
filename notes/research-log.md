@@ -164,3 +164,27 @@ clean best-case-geometry theory, but a toy on its own. Highest-value next step: 
 walls and compounding survive **trained models**, and measure rho in the wild. Start with
 the cheapest real-model test — the retrieval wall with a real (Matryoshka) embedder,
 truncated across dimensions on a hard retrieval set. No training needed.
+
+## 2026-06-30 — The wall is real: a production embedder wastes half its dimensions (E4)
+
+First real-model experiment, on GPU. Embedded full SciFact (5,183 docs, 300 queries) with
+**mxbai-embed-large-v1 (1024-d, Matryoshka)** and truncated across dimensions.
+
+**Finding — real embedders inherit the wall (F9, retrieval side).** recall@10 ramps
+0.09 (d=8) → 0.57 (32) → 0.80 (128) → 0.83 (256) → **0.872 (512) → 0.872 (1024)**. The curve
+saturates: the top half of the embedding (dims 512–1024) adds *exactly nothing* on this
+corpus (0.872 = 0.872). So the free-vector wall of E1 is not a toy artifact — a strong
+production embedder shows the same ramp-then-plateau, and here ~half its representational
+budget is dead weight. Per the allocation law (C3), that budget belongs in compression.
+This is a clean, quotable real-model anchor for the paper.
+
+**Caveat / next.** One model, one corpus; need ≥1 more embedder and a harder set (LIMIT,
+Weller's adversarial set, where the wall should bite far sooner) to generalize. But the
+direction is unambiguous.
+
+**Next — E5, the harder half: a real compression wall.** Mirror E2 with an actual soft-
+prompt compressor on a small LLM (mean-pool the passage hidden states into m soft tokens +
+a trained projector, frozen-ish decoder), and measure answer accuracy vs m. This is the
+first *training* experiment, so it will lean on the Kaggle GPU properly. If a real
+compressor shows the same D_c wall, both bottlenecks are validated on real models and the
+empirical core of the paper is in place.
