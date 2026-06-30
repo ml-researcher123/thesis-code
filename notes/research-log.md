@@ -242,3 +242,25 @@ per-slot width floor; buy more slots only while each stays above it.
 retrieve the gold passage among many (budget d_r) then compress it (budget D_c) on one
 synthetic corpus with unique per-passage topics, and show the compounding gap + optimal split
 on real components. Then the C4 facet-lens method.
+
+## 2026-06-30 — Capstone: compounding + allocation on a REAL end-to-end pipeline (E6)
+
+One corpus (N=2000 passages, similar topics, n_f=8 facts), real mxbai retrieval (paraphrase
+queries, truncated topic embeddings) + real multi-token compression sharing B = d_r + D_c,
+composed per query.
+
+**Finding — the compounding gap is large and real, the optimal split interior.** At B=128,
+each stage alone scores 0.63 (retrieval) / 0.89 (compression), but the best budget split
+yields only **0.234** end-to-end — a **0.39 compounding gap**; the optimum is 64:64, not all
+to one stage. At B=256 the gap is 0.137 (best 128:128). Retrieval is the binding bottleneck
+here — matching paraphrases against 2000 near-duplicate topics is genuinely hard, so starving
+it under a tight budget hurts most. This is E3's synthetic result reproduced on real
+embeddings and a single task: the deployed big-embedder/tiny-compressor habit is off the
+frontier.
+
+**Milestone — empirical core complete.** C1 (walls, both stages: E1/E2 synthetic, E4/E5/E5b
+real), C2 (compounding: E3/E3b synthetic, E6 real), C3 (allocation: E3 synthetic, E6 real) are
+all validated, synthetic→real. Paper outline in `paper/outline.md`. Remaining is optional
+elevation (C4 facet-lens as an explicit method — E5b already partially demos the multi-view
+escape) and write-up. Minor: E6 standalone at B=384 is blank only because 384 isn't on the
+measurement grid; cosmetic.

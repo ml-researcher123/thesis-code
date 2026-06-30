@@ -19,6 +19,8 @@ plus the evidence pointer. A claim is only `SUPPORTED` with ≥3 seeds + varianc
 | F11 | The faithful generative soft-token compressor does **not** leave chance without a large training budget (frozen LLM can't cheaply learn to read novel soft tokens). | SUPPORTED (negative) | E5 soft-prompt smokes: LoRA + identity-init + lr=2e-3 all ≈chance at ≤200 steps. Kept as future work; not the same as F9 (which the probe established). |
 | F10 | Real RAG corpora have a measurable hardness-correlation ρ that determines their compounding regime. | OPEN | Needs real retriever+compressor per-item success on a shared benchmark. |
 
+| F13 | Compounding (C2) + interior-optimal allocation (C3) hold **end-to-end on real models, one task**. | SUPPORTED | E6 (`outputs/e6_real_allocation`, mxbai, N=2000): B=128 gap=0.392 (stages alone 0.63/0.89, pipeline 0.234, optimal 64:64); B=256 gap=0.137. |
+
 ## Open threads / risks
 - F3 wants a clean functional fit; if it's really `~d/n_d`, that's a quotable scaling and a
   strong setup for the allocation law (C3).

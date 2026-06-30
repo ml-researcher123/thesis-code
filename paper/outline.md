@@ -79,8 +79,13 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
 | Compounding (C2) | E3, E3b | E6 |
 | Allocation (C3) | E3 | E6 |
 
+## Headline numbers (final, from outputs/)
+- Retrieval wall: mxbai/SciFact recall@10 0.09→0.87, **d=512 ≡ d=1024** (top half wasted).
+- Compression: single 1024-d vector holds ~1 fact (0.98→0.20); **multi-token recovers to 0.99**.
+- Compounding (real, E6): **B=128 gap 0.392** (stages 0.63/0.89 alone → pipeline 0.234, opt 64:64).
+
 ## TODO before submission
-- [ ] Finalize E6 mxbai numbers; make the 4 headline figures publication-grade.
+- [x] E6 mxbai numbers in. Next: make the 4 headline figures publication-grade.
 - [ ] A second embedder + a harder retrieval set (LIMIT) for the retrieval wall (generality).
 - [ ] Formalize C1 bound (or present as rigorous empirical characterization + mechanism).
 - [ ] (Stretch) C4 facet-lens method as an explicit *escape*; E5b is already a partial demo.
