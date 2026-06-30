@@ -1,0 +1,18 @@
+# E5 — Real-encoder compression wall (reliable; tests F9 for compression).
+# Compresses multi-fact passages to one frozen-encoder embedding, truncates to D_c, and
+# probes fact recall with a light MLP. Mirrors E2 with a real encoder. Kaggle-first.
+name: e5_real_compression_probe
+experiment: e5_real_compression_probe
+seed: 0
+verbose: false
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  n_f_list: [1, 2, 4, 8, 16]
+  dims: [8, 16, 32, 64, 128, 256, 512, 1024]
+  P_train: 256
+  P_eval: 128
+  steps: 500
+  lr: 0.002
+  seeds: [0, 1]
+  rel_thresh: 0.9

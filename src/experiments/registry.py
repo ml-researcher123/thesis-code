@@ -13,6 +13,8 @@ from . import (
     e3_compounding,
     e3b_dependence,
     e4_real_retrieval_wall,
+    e5_real_compression_probe,
+    e5_real_compression_wall,
 )
 
 REGISTRY: dict[str, Callable] = {
@@ -21,8 +23,11 @@ REGISTRY: dict[str, Callable] = {
     "e3_compounding": e3_compounding.run,
     "e3b_dependence": e3b_dependence.run,
     "e4_real_retrieval_wall": e4_real_retrieval_wall.run,
-    # "e5_facetlens": e5_facetlens.run,
-    # "e6_generalization": e6_generalization.run,
+    # e5_real_compression_wall = faithful generative soft-token compressor (needs a large
+    # training budget; sits at chance otherwise). e5_real_compression_probe = the reliable
+    # real-encoder truncation wall we actually run.
+    "e5_real_compression_wall": e5_real_compression_wall.run,
+    "e5_real_compression_probe": e5_real_compression_probe.run,
 }
 
 
