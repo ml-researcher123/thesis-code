@@ -1,0 +1,33 @@
+# E3 — Shared-budget compounding (HEADLINE: C2 + C3).
+# Composes the validated retrieval wall (E1) and compression wall (E2) on a shared
+# dimension grid; shows the best budget split underperforms either stage at full budget B.
+# Retrieval hardness calibrated locally (n_d=256,k=64 -> wall at d~48, recall@k metric).
+# Budgets span tight (gap large) to ample (gap ~0). Kaggle-first: NO results committed.
+name: e3_compounding
+experiment: e3_compounding
+seed: 0
+verbose: false
+
+params:
+  grid: [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192]
+  budgets: [64, 96, 128, 160, 192]
+  seeds: [0, 1, 2]
+
+  retrieval:            # calibrated to be a real (but cheap) bottleneck: wall at d~48
+    pattern: random_ksubsets
+    n_d: 256
+    k: 64
+    n_q: 256
+    metric: recall_at_k
+    steps: 500
+    lr: 0.05
+    margin: 1.0
+
+  compression:          # E2-style slot memory; D_c = m * d_c (m=1 at D_c=16 is degenerate)
+    n_f: 64
+    d_c: 16
+    V: 4
+    d_key: 128
+    P: 128
+    steps: 1500
+    lr: 0.003
