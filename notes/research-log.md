@@ -188,3 +188,30 @@ a trained projector, frozen-ish decoder), and measure answer accuracy vs m. This
 first *training* experiment, so it will lean on the Kaggle GPU properly. If a real
 compressor shows the same D_c wall, both bottlenecks are validated on real models and the
 empirical core of the paper is in place.
+
+## 2026-06-30 — A 1024-d embedding holds ~one fact: the real compression wall (E5)
+
+Two parts. **(1) A genuine negative result.** The faithful generative soft-token compressor
+(soft_prompt.py) would not leave chance: a frozen LLM can't cheaply learn to read novel soft
+tokens — LoRA, identity-init, and higher lr all left it at ~chance in a feasible budget. That
+is *why* GIST/ICAE/xRAG train extensively; brute-forcing it on Kaggle wasn't worth the quota.
+Kept as documented future work, config not queued. **(2) The reliable route (E5 probe).**
+Compress a multi-fact passage to one frozen mxbai-large embedding, truncate to D_c, recover a
+queried key's value with a light probe on held-out passages.
+
+**Finding — single-vector compression capacity is tiny, and collapses with content.** Full
+(1024-d) held-out recall: **0.98 (1 fact) → 0.53 (2) → 0.32 (4) → 0.24 (8) → 0.20 (16)**, with
+chance 0.125. A SOTA 1024-dimensional embedding retrievably stores barely more than a single
+fact; by ~16 facts it is near chance. The D_c ramp is clean where there is signal (n_f=1:
+critical D_c=8). This is the real-model echo of E2 **and** a direct confirmation of F6 (a
+single fat token collapses) and the granularity dilemma — now with a production encoder.
+
+**Scope note.** This is deliberately the m=1 (one vector) regime — F6's worst case. A
+multi-vector real compressor (m>1) should recover far more and, per F6, exhibit an interior
+optimum; building that (and composing E4+E5 for real-model compounding) is the natural next
+real-model step.
+
+**Milestone.** Both fixed-d bottlenecks are now validated on real models: retrieval (E4, a
+production embedder wastes half its dims) and compression (E5, one vector ≈ one fact). On top
+of the free-vector theory (E1–E3b) the empirical core of the paper is in place. The remaining
+big build is the proposed *method* — the multi-view "facet-lens" escape (C4).
