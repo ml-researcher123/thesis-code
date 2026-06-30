@@ -1,0 +1,20 @@
+# C4b — Real-encoder facet-lens escape (the real-model version of C4, fills the outline TODO).
+# Frozen mxbai embeddings of a facet-structured natural-language corpus; learned low-rank lenses
+# at equal doc-side budget; single vs generic multiview vs routed facetlens. Expect routed
+# facetlens to reach the target mAP at a smaller budget than single (escape) and beat multiview.
+name: c4b_real_facetlens
+experiment: c4b_real_facetlens
+seed: 0
+verbose: false
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  N: 300
+  facets: [profession, city, hobby, pet, vehicle, instrument, color, sport, drink, language]  # F=10
+  budgets: [10, 20, 40, 80, 160, 320]
+  modes: [single, multiview, facetlens]
+  seeds: [0, 1, 2]
+  steps: 700
+  lr: 0.01
+  margin: 0.5
+  target_map: 0.9

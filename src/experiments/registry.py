@@ -9,6 +9,7 @@ from typing import Callable
 
 from . import (
     e1_retrieval_capacity,
+    e1c_scaling_fit,
     e2_compression_capacity,
     e3_compounding,
     e3b_dependence,
@@ -17,11 +18,15 @@ from . import (
     e5_real_compression_wall,
     e5b_real_compression_shape,
     e6_real_allocation,
+    e7_rho,
+    e8_limit,
     c4_facetlens,
+    c4b_real_facetlens,
 )
 
 REGISTRY: dict[str, Callable] = {
     "e1_retrieval_capacity": e1_retrieval_capacity.run,
+    "e1c_scaling_fit": e1c_scaling_fit.run,
     "e2_compression_capacity": e2_compression_capacity.run,
     "e3_compounding": e3_compounding.run,
     "e3b_dependence": e3b_dependence.run,
@@ -33,7 +38,10 @@ REGISTRY: dict[str, Callable] = {
     "e5_real_compression_probe": e5_real_compression_probe.run,
     "e5b_real_compression_shape": e5b_real_compression_shape.run,
     "e6_real_allocation": e6_real_allocation.run,
+    "e7_rho": e7_rho.run,
+    "e8_limit": e8_limit.run,
     "c4_facetlens": c4_facetlens.run,
+    "c4b_real_facetlens": c4b_real_facetlens.run,
 }
 
 

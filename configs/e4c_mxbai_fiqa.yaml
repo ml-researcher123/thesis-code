@@ -1,0 +1,17 @@
+# E4c — Retrieval-wall generality across DATASET: same embedder (mxbai) on FiQA (financial
+# QA, a domain shift from scientific SciFact). A wall here too shows it is not a SciFact
+# artifact. Corpus capped for Kaggle GPU budget (gold docs always retained). Kaggle-first.
+name: e4c_mxbai_fiqa
+experiment: e4_real_retrieval_wall
+seed: 0
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  dataset: fiqa
+  split: test
+  dims: [8, 16, 32, 64, 128, 256, 512, 1024]
+  k: 10
+  max_docs: 15000
+  truncation: matryoshka
+  saturation_frac: 0.98

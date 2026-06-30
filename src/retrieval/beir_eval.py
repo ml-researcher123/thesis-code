@@ -48,12 +48,66 @@ def load_beir(name: str = "scifact", split: str = "test", max_docs: int = 0):
     return corpus, queries, qrels
 
 
+def load_limit(variant: str = "small", split: str = "test"):
+    """Load the Weller et al. LIMIT adversarial retrieval set (arXiv:2508.21038, ICLR'26).
+
+    LIMIT is the all-pairs k=2 pattern realized in natural language: 1000 "Who likes X?"
+    queries over biographical docs, each query with **exactly 2** gold docs — the canonical
+    real-data instance of E1's wall (frontier models score low even at full dim). ``variant``
+    is "small" (46 docs, `orionweller/LIMIT-small`) or "full" (50k docs, `orionweller/LIMIT`).
+    HF layout: config `corpus` (split default), `queries` (split default), `default` (qrels,
+    split test; columns corpus-id/query-id/score). Returns (corpus, queries, qrels) like load_beir.
+    """
+    from datasets import load_dataset
+
+    repo = "orionweller/LIMIT-small" if variant == "small" else "orionweller/LIMIT"
+
+    def _first(ds):  # take the single split inside a one-config DatasetDict
+        return ds[list(ds.keys())[0]]
+
+    corpus_ds = _first(load_dataset(repo, "corpus"))
+    queries_ds = _first(load_dataset(repo, "queries"))
+    qrels_dd = load_dataset(repo, "default")
+    qrels_ds = qrels_dd[split] if split in qrels_dd else _first(qrels_dd)
+
+    corpus = {str(r["_id"]): ((r.get("title") or "") + " " + (r.get("text") or "")).strip()
+              for r in corpus_ds}
+    queries = {str(r["_id"]): r["text"] for r in queries_ds}
+    qrels: dict[str, set[str]] = {}
+    for r in qrels_ds:
+        if int(r["score"]) > 0:
+            qrels.setdefault(str(r["query-id"]), set()).add(str(r["corpus-id"]))
+
+    queries = {q: t for q, t in queries.items() if q in qrels and (qrels[q] & corpus.keys())}
+    qrels = {q: (qrels[q] & corpus.keys()) for q in queries}
+    return corpus, queries, qrels
+
+
 def truncate_normalize(emb: np.ndarray, d: int) -> np.ndarray:
     """Matryoshka truncation: keep the first d dims and L2-renormalize."""
     e = emb[:, :d].astype(np.float32)
     n = np.linalg.norm(e, axis=1, keepdims=True)
     n[n == 0] = 1.0
     return e / n
+
+
+def pca_project_normalize(fit_emb: np.ndarray, doc_emb: np.ndarray, q_emb: np.ndarray,
+                          d: int):
+    """Best d-dim *linear* code: PCA fit on docs, project docs+queries, L2-renormalize.
+
+    For non-Matryoshka encoders, raw prefix truncation is unfair (dims aren't importance-
+    ordered). PCA gives the optimal d-dim linear subspace of the doc distribution, so a wall
+    that survives PCA truncation is a genuine capacity limit, not an MRL artifact. Both sides
+    use the same projection (fit on the corpus) so inner products stay meaningful.
+    """
+    mean = fit_emb.mean(axis=0, keepdims=True)
+    _, _, vt = np.linalg.svd(fit_emb - mean, full_matrices=False)
+    comps = vt[:d]                                   # (d, D)
+    de = (doc_emb - mean) @ comps.T
+    qe = (q_emb - mean) @ comps.T
+    dn = np.linalg.norm(de, axis=1, keepdims=True); dn[dn == 0] = 1.0
+    qn = np.linalg.norm(qe, axis=1, keepdims=True); qn[qn == 0] = 1.0
+    return (de / dn).astype(np.float32), (qe / qn).astype(np.float32)
 
 
 def rank_scores(q_emb: np.ndarray, d_emb: np.ndarray, k: int) -> np.ndarray:

@@ -24,7 +24,8 @@ import numpy as np
 
 from ..common import RunContext
 from ..eval.metrics import ndcg_at_k, recall_at_k
-from ..retrieval.beir_eval import load_beir, rank_scores, truncate_normalize
+from ..retrieval.beir_eval import (load_beir, load_limit, pca_project_normalize, rank_scores,
+                                   truncate_normalize)
 
 
 def run(ctx: RunContext):
@@ -39,13 +40,18 @@ def run(ctx: RunContext):
     k = p.get("k", 10)
     max_docs = p.get("max_docs", 0)
     query_prompt = p.get("query_prompt", "")  # some models want a query prefix
+    truncation = p.get("truncation", "matryoshka")  # "matryoshka" (prefix) or "pca" (best linear)
 
     from ..common import ensure_deps
     ensure_deps({"sentence_transformers": "sentence-transformers", "datasets": "datasets"}, log)
     from sentence_transformers import SentenceTransformer
 
-    log(f"E4 real retrieval wall | model={model_name} dataset={dataset} dims={dims} k={k}")
-    corpus, queries, qrels = load_beir(dataset, split, max_docs=max_docs)
+    log(f"E4 real retrieval wall | model={model_name} dataset={dataset} dims={dims} k={k} "
+        f"trunc={truncation}")
+    if dataset.startswith("limit"):
+        corpus, queries, qrels = load_limit("small" if "small" in dataset else "full", split)
+    else:
+        corpus, queries, qrels = load_beir(dataset, split, max_docs=max_docs)
     doc_ids = list(corpus)
     q_ids = list(queries)
     log(f"  corpus={len(doc_ids)} queries={len(q_ids)}")
@@ -68,8 +74,11 @@ def run(ctx: RunContext):
     gold = [qrels[q] for q in q_ids]
     curve = {}
     for d in dims:
-        de = truncate_normalize(d_emb_full, d)
-        qe = truncate_normalize(q_emb_full, d)
+        if truncation == "pca":
+            de, qe = pca_project_normalize(d_emb_full, d_emb_full, q_emb_full, d)
+        else:
+            de = truncate_normalize(d_emb_full, d)
+            qe = truncate_normalize(q_emb_full, d)
         ranked = rank_scores(qe, de, k)
         recalls, ndcgs = [], []
         for i in range(len(q_ids)):

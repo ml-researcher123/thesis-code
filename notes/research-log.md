@@ -288,3 +288,44 @@ beats single" (known): the lever is specialization + routing.
 complete in skeleton: theory/diagnosis (a problem), an actionable allocation (what to do
 now), and a principled escape (how to do better). Remaining is write-up + generality
 (2nd embedder, LIMIT) + optionally a real-encoder facet-lens.
+
+## 2026-07-01 — Closing the generality gaps: 4 new experiments queued for Kaggle
+
+Goal this session: finish ALL remaining experimental execution so the paper is write-ready.
+Built four new experiment families, validated each locally (CPU + a real small encoder,
+all-MiniLM-L6-v2), and queued the canonical/strong-encoder versions for the Kaggle GPU loop.
+
+**E8 — LIMIT adversarial wall (canonical real data for C1).** Weller et al.'s LIMIT realizes
+our all-pairs k=2 pattern in natural language (46 docs, 1000 queries, exactly 2 gold/query).
+Smoke (MiniLM, LIMIT-small): **recall@10 = 0.48** — i.e. even allowed to return 10 of just 46
+docs (>20% of the corpus), it recovers under half the gold. Truncation makes it worse
+(R@10 0.39→0.32 as d 128→32). This is the real-data, real-model echo of E1, on the field's own
+adversarial benchmark. Kaggle will run 3 embedder families × {small, full 50k} for the headline.
+
+**E4 generality — 2nd embedder + a 2nd dataset + PCA truncation.** Queued arctic-embed-m-v1.5
+(a 2nd MRL embedder) on SciFact, mxbai on FiQA (domain shift), and bge-large under *PCA*
+truncation (optimal linear projection, not Matryoshka — preempts "your wall is an MRL
+artifact"). If the truncation wall replicates across all, C1 is not mxbai/SciFact-specific.
+
+**E7 — measured hardness correlation ρ (closes F10).** On E6's shared real pipeline, recorded
+per-query retrieval margin and compression logit margin. Smoke (MiniLM): **mean ρ_phi ≈ −0.01 ≈ 0**;
+the E3b copula predicts the observed pipeline recall within ~0.006 at every operating point.
+So a real retriever+compressor defaults to the **≈multiplicative (independent)** regime — NOT
+super-multiplicative. This is good news for C3 (clean p_R·p_C allocation) and frames the sharp
+open question: can adversarial inputs push ρ negative? Kaggle re-runs on mxbai for the paper number.
+
+**C4b — real-encoder facet-lens (the honest scope of C4).** Ported the facet-lens to learned
+low-rank projections over a FROZEN real encoder. Key result (MiniLM, 10 facets): a single
+*optimal learned* projection WINS at low/moderate budgets (it can unmix linearly-separable
+facets) but **plateaus at a sign-rank ceiling** (~0.90 mAP, barely moving d 80→160), while routed
+facetlens keeps climbing and overtakes only at high budget (0.916 vs 0.899 at d=160). Generic
+multiview is consistently worst (replicates C4's free-vector finding). **Honest takeaway:** the
+free-vector escape (C4: d*=12 vs 24) is real but its *useful-budget* advantage does NOT transfer
+to strong real encoders — multi-view routing is not a free lunch. This scopes C4 precisely and
+fits the paper's C1+C2+C3 spine (C4 as a "when does the escape help?" section). Kaggle runs mxbai.
+
+Also: E1c (F3 scaling fit) smoke gives a clean **d\* ∝ √n_d** (power-law exponent b=0.50,
+R²=0.81) on free vectors — a quotable law that makes the C3 allocation recipe concrete.
+
+Net: pushing 8 configs (c4b, e1c, e4b/c/d, e7, e8 small/full). After Kaggle returns results,
+finalize findings F15–F18 and the paper is write-ready.

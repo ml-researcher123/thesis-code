@@ -146,7 +146,7 @@ class AttnProbe(nn.Module):
 
 
 def fit_attn_probe(Str, kvtr, ytr, Ste, kvte, yte, V, steps, lr, seed, device,
-                   return_correct=False):
+                   return_correct=False, return_logits=False):
     set_seed(seed)
     device = torch.device(device)
     Str = torch.tensor(Str, device=device); kvtr = torch.tensor(kvtr, device=device)
@@ -161,8 +161,16 @@ def fit_attn_probe(Str, kvtr, ytr, Ste, kvte, yte, V, steps, lr, seed, device,
         loss = F.cross_entropy(probe(Str[idx], kvtr[idx]), ytr[idx])
         opt.zero_grad(set_to_none=True); loss.backward(); opt.step()
     with torch.no_grad():
-        correct = (probe(Ste, kvte).argmax(-1) == yte)
+        logits = probe(Ste, kvte)
+        correct = (logits.argmax(-1) == yte)
         acc = float(correct.float().mean().cpu())
+    if return_logits:
+        # per-item margin = correct-class logit minus best other-class logit (>0 iff correct)
+        lg = logits.clone()
+        true_logit = lg.gather(1, yte.view(-1, 1)).squeeze(1)
+        lg.scatter_(1, yte.view(-1, 1), float("-inf"))
+        margin = (true_logit - lg.max(dim=1).values)
+        return acc, correct.cpu().numpy(), margin.cpu().numpy()
     if return_correct:
         return acc, correct.cpu().numpy()
     return acc

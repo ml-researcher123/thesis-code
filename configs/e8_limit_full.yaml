@@ -1,0 +1,19 @@
+# E8 (full) — LIMIT full set (50k docs, 1000 queries, 2 gold/query): the paper's headline
+# adversarial number. Recall@{2,10,100,1000} at full dim across embedders; this is where the
+# original paper reports frontier models <20% recall@100. Heavier (50k encodings/model) but
+# one-shot. Kaggle-first.
+name: e8_limit_full
+experiment: e8_limit
+seed: 0
+
+params:
+  variant: full
+  split: test
+  ks: [2, 10, 100, 1000]
+  trunc_dims: []
+  models:
+    - {name: "mixedbread-ai/mxbai-embed-large-v1"}
+    - {name: "Snowflake/snowflake-arctic-embed-m-v1.5",
+       query_prompt: "Represent this sentence for searching relevant passages: "}
+    - {name: "BAAI/bge-base-en-v1.5",
+       query_prompt: "Represent this sentence for searching relevant passages: "}

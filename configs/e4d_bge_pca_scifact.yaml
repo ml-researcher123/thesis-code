@@ -1,0 +1,18 @@
+# E4d — Retrieval wall under OPTIMAL linear projection (PCA), not Matryoshka. bge-large-en-v1.5
+# is NOT MRL-trained, so prefix truncation is unfair; PCA gives the best d-dim linear subspace.
+# A wall that survives PCA truncation is a genuine capacity limit, not an MRL ordering artifact
+# — preempts the "your wall is just Matryoshka" objection. Kaggle-first.
+name: e4d_bge_pca_scifact
+experiment: e4_real_retrieval_wall
+seed: 0
+
+params:
+  model: BAAI/bge-large-en-v1.5
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  dataset: scifact
+  split: test
+  dims: [8, 16, 32, 64, 128, 256, 512, 1024]
+  k: 10
+  max_docs: 0
+  truncation: pca
+  saturation_frac: 0.98
