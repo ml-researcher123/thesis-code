@@ -1,0 +1,124 @@
+{
+  "experiment": "c4b_real_facetlens",
+  "config_params": {
+    "model": "mixedbread-ai/mxbai-embed-large-v1",
+    "N": 300,
+    "facets": [
+      "profession",
+      "city",
+      "hobby",
+      "pet",
+      "vehicle",
+      "instrument",
+      "color",
+      "sport",
+      "drink",
+      "language"
+    ],
+    "budgets": [
+      10,
+      20,
+      40,
+      80,
+      160,
+      320
+    ],
+    "modes": [
+      "single",
+      "multiview",
+      "facetlens"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "steps": 700,
+    "lr": 0.01,
+    "margin": 0.5,
+    "target_map": 0.9
+  },
+  "model": "mixedbread-ai/mxbai-embed-large-v1",
+  "N": 300,
+  "F": 10,
+  "facets": [
+    "profession",
+    "city",
+    "hobby",
+    "pet",
+    "vehicle",
+    "instrument",
+    "color",
+    "sport",
+    "drink",
+    "language"
+  ],
+  "map_curve": {
+    "single": {
+      "10": 0.35974279046058655,
+      "20": 0.7349794705708822,
+      "40": 0.9865120649337769,
+      "80": 0.9991843899091085,
+      "160": 0.9999881188074747,
+      "320": 1.0
+    },
+    "multiview": {
+      "10": 0.26612695058186847,
+      "20": 0.26462435722351074,
+      "40": 0.26870302359263104,
+      "80": 0.28857048352559406,
+      "160": 0.6196407874425253,
+      "320": 0.9823135534922282
+    },
+    "facetlens": {
+      "10": 0.3421591818332672,
+      "20": 0.5806063214937845,
+      "40": 0.9612847169240316,
+      "80": 1.0,
+      "160": 1.0,
+      "320": 1.0
+    }
+  },
+  "real_curve": {
+    "single": {
+      "10": 0.10000000149011612,
+      "20": 0.5583333373069763,
+      "40": 0.949999988079071,
+      "80": 0.949999988079071,
+      "160": 0.975000003973643,
+      "320": 1.0
+    },
+    "multiview": {
+      "10": 0.0,
+      "20": 0.0,
+      "40": 0.0,
+      "80": 0.008333333457509676,
+      "160": 0.4416666825612386,
+      "320": 0.899999996026357
+    },
+    "facetlens": {
+      "10": 0.09166666865348816,
+      "20": 0.4083333412806193,
+      "40": 0.925000011920929,
+      "80": 1.0,
+      "160": 1.0,
+      "320": 1.0
+    }
+  },
+  "critical_budget_for_target": {
+    "single": 40,
+    "multiview": 320,
+    "facetlens": 40
+  },
+  "target_map": 0.9,
+  "figure": "c4b_real_facetlens.png",
+  "_meta": {
+    "name": "c4b_real_facetlens",
+    "experiment": "c4b_real_facetlens",
+    "seconds": 498.55,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "d856c35f3a76",
+    "finished_at": "2026-06-30T20:34:24"
+  }
+}

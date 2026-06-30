@@ -1,0 +1,27 @@
+[     0.0s] === run 'c4b_real_facetlens' ===
+[     0.0s] host=d856c35f3a76 python=3.12.13 config=/kaggle/working/repo/configs/c4b_real_facetlens.yaml
+[     0.3s] device=cuda seed=0
+[    36.8s] C4b real facet-lens | model=mixedbread-ai/mxbai-embed-large-v1 N=300 F=10 budgets=[10, 20, 40, 80, 160, 320] device=cuda
+[    46.7s]   [seed 0] encoded 300 docs, 40 queries, dim=1024
+[    55.4s]   [seed 1] encoded 300 docs, 40 queries, dim=1024
+[    63.1s]   [seed 2] encoded 300 docs, 40 queries, dim=1024
+[    70.2s]   single     d=  10 | mAP=0.360+-0.054 real=0.100
+[    92.0s]   single     d=  20 | mAP=0.735+-0.005 real=0.558
+[   113.5s]   single     d=  40 | mAP=0.987+-0.005 real=0.950
+[   135.3s]   single     d=  80 | mAP=0.999+-0.001 real=0.950
+[   157.0s]   single     d= 160 | mAP=1.000+-0.000 real=0.975
+[   178.5s]   single     d= 320 | mAP=1.000+-0.000 real=1.000
+[   205.5s]   multiview  d=  10 | mAP=0.266+-0.007 real=0.000
+[   232.4s]   multiview  d=  20 | mAP=0.265+-0.004 real=0.000
+[   261.7s]   multiview  d=  40 | mAP=0.269+-0.004 real=0.000
+[   287.6s]   multiview  d=  80 | mAP=0.289+-0.012 real=0.008
+[   313.4s]   multiview  d= 160 | mAP=0.620+-0.006 real=0.442
+[   339.2s]   multiview  d= 320 | mAP=0.982+-0.005 real=0.900
+[   364.3s]   facetlens  d=  10 | mAP=0.342+-0.020 real=0.092
+[   390.5s]   facetlens  d=  20 | mAP=0.581+-0.023 real=0.408
+[   417.0s]   facetlens  d=  40 | mAP=0.961+-0.016 real=0.925
+[   444.1s]   facetlens  d=  80 | mAP=1.000+-0.000 real=1.000
+[   471.3s]   facetlens  d= 160 | mAP=1.000+-0.000 real=1.000
+[   498.3s]   facetlens  d= 320 | mAP=1.000+-0.000 real=1.000
+[   498.8s]   saved figure -> c4b_real_facetlens.png
+[   498.8s] === done in 498.5s -> /kaggle/working/repo/outputs/c4b_real_facetlens ===
