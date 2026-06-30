@@ -1,0 +1,14 @@
+[     0.0s] === run 'e3b_dependence' ===
+[     0.0s] host=02926671b08b python=3.12.13 config=/kaggle/working/repo/configs/e3b_dependence.yaml
+[     0.2s] device=cuda seed=0
+[     0.2s] E3b dependence | ops=[(16, 48), (32, 32), (32, 64)] rhos=[-0.9, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 0.9] seeds=[0, 1, 2] device=cuda
+[     3.6s]   [R] d_r=  16 | p_R=0.550
+[     5.4s]   [R] d_r=  32 | p_R=0.777
+[    16.6s]   [C] D_c=  32 (m=2) | p_C=0.720
+[    27.7s]   [C] D_c=  48 (m=3) | p_C=0.872
+[    38.7s]   [C] D_c=  64 (m=4) | p_C=0.948
+[    39.2s]   op 16:48 | p_R=0.550 p_C=0.872 indep=0.480 pipe(rho=-0.5)=0.441 pipe(rho=+0.9)=0.550 [frechet 0.422..0.550]
+[    39.7s]   op 32:32 | p_R=0.777 p_C=0.720 indep=0.559 pipe(rho=-0.5)=0.515 pipe(rho=+0.9)=0.687 [frechet 0.497..0.720]
+[    40.2s]   op 32:64 | p_R=0.777 p_C=0.948 indep=0.737 pipe(rho=-0.5)=0.727 pipe(rho=+0.9)=0.777 [frechet 0.726..0.777]
+[    40.5s]   saved figure -> e3b_dependence.png
+[    40.5s] === done in 40.3s -> /kaggle/working/repo/outputs/e3b_dependence ===
