@@ -215,3 +215,30 @@ real-model step.
 production embedder wastes half its dims) and compression (E5, one vector ≈ one fact). On top
 of the free-vector theory (E1–E3b) the empirical core of the paper is in place. The remaining
 big build is the proposed *method* — the multi-view "facet-lens" escape (C4).
+
+## 2026-06-30 — Multi-token compression recovers capacity; F6's interior optimum is mechanism-specific (E5b)
+
+Extended the real compressor to m chunk-embeddings read by an **attention** probe (a plain
+concat-MLP failed at slot lookup — the read mechanism matters as much as the budget).
+
+**Finding 1 — capacity recovers, strongly.** Giving each fact its own slot (m=n_f) with an
+adequate per-slot width reaches near-perfect held-out recall: **0.96 (n_f=4) → 0.98 (8) →
+0.99 (16) → 0.99 (32)** on mxbai. The single vector (E5) held ~1 fact (0.20 at n_f=16);
+m tokens hold them all. The wall is clean: usable code ≈ n_f × ~64 dims/fact. So the fix for
+single-vector collapse is to spread the budget across several soft tokens — but each needs a
+width floor.
+
+**Finding 2 — an honest boundary on F6.** At a *tight* fixed budget (D_c=64, n_f=32), recall
+is **monotonic in m**: m=1 best (0.21), decaying to chance by m=32 (d_c=2). Only F6's
+thin-slot collapse reproduces; the "one fat token collapses" half does **not** for real-
+encoder truncation. So F6's interior optimum is **specific to E2's attention-read *learned*
+soft tokens** (where a lone slot is a degenerate attention target), not a universal law of
+compression. (The experiment's auto-summary mislabels best-m=1 as an "interior optimum" — it
+is not; recording the correct reading here.) Net refinement for C3: the m-vs-d_c split has a
+per-slot width floor; buy more slots only while each stays above it.
+
+**Status.** Real-model evidence is now rich: retrieval wall (E4), single-vector collapse
+(E5), multi-token recovery + width floor (E5b). Next: **E6**, a real end-to-end allocation —
+retrieve the gold passage among many (budget d_r) then compress it (budget D_c) on one
+synthetic corpus with unique per-passage topics, and show the compounding gap + optimal split
+on real components. Then the C4 facet-lens method.
