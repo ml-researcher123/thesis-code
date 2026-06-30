@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/kaggle/working/repo/kaggle/run.py", line 80, in main
+    results, summary = run_fn(ctx)
+                       ^^^^^^^^^^^
+  File "/kaggle/working/repo/src/experiments/e3_compounding.py", line 78, in run
+    res = fit_capacity(pat, d, steps=r_steps, lr=r_lr, margin=r_margin,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/repo/src/theory/free_embedding.py", line 72, in fit_capacity
+    neg_idx = complement_indices(pos_idx, n_d).to(device)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/repo/src/theory/free_embedding.py", line 36, in complement_indices
+    mask.scatter_(1, pos_idx, False)
+RuntimeError: Expected all tensors to be on the same device, but got index is on cuda:0, different from other tensors on cpu (when checking argument in method wrapper_CUDA_scatter__value)

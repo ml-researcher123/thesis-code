@@ -1,0 +1,45 @@
+name: e3_compounding
+experiment: e3_compounding
+seed: 0
+verbose: false
+params:
+  grid:
+  - 16
+  - 32
+  - 48
+  - 64
+  - 80
+  - 96
+  - 112
+  - 128
+  - 144
+  - 160
+  - 176
+  - 192
+  budgets:
+  - 64
+  - 96
+  - 128
+  - 160
+  - 192
+  seeds:
+  - 0
+  - 1
+  - 2
+  retrieval:
+    pattern: random_ksubsets
+    n_d: 256
+    k: 64
+    n_q: 256
+    metric: recall_at_k
+    steps: 500
+    lr: 0.05
+    margin: 1.0
+  compression:
+    n_f: 64
+    d_c: 16
+    V: 4
+    d_key: 128
+    P: 128
+    steps: 1500
+    lr: 0.003
