@@ -1,0 +1,38 @@
+name: e1c_scaling_fit
+experiment: e1c_scaling_fit
+seed: 0
+verbose: false
+params:
+  patterns:
+  - all_pairs
+  - random_ksubsets
+  k_random: 3
+  dims:
+  - 2
+  - 3
+  - 4
+  - 6
+  - 8
+  - 11
+  - 16
+  - 22
+  - 32
+  n_d_list:
+  - 40
+  - 64
+  - 100
+  - 160
+  - 256
+  - 400
+  seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  max_queries: 1500
+  steps: 500
+  lr: 0.05
+  margin: 1.0
+  realize_thresh: 0.99
+  subcritical_floor: 0.02
