@@ -1,0 +1,20 @@
+# C4 — Facet-lens escape (the paper's method). Free-vector; CPU-feasible but Kaggle-first.
+# Compares single vs generic multi-view (MaxSim) vs routed facet-lenses at equal budget on a
+# facet-structured pattern. Expectation: facetlens reaches realizability=1 at a far smaller
+# budget than single (escape), and below generic multiview (specialization helps).
+name: c4_facetlens
+experiment: c4_facetlens
+seed: 0
+verbose: false
+
+params:
+  N: 144
+  F: 6           # facets (also #lenses for multiview/facetlens)
+  G: 3           # values per facet (group size ~ N/G = 48)
+  budgets: [6, 12, 24, 48, 96]
+  modes: [single, multiview, facetlens]
+  seeds: [0, 1, 2]
+  steps: 900
+  lr: 0.05
+  margin: 1.0
+  realize_thresh: 0.99
