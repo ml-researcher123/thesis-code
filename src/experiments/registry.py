@@ -15,6 +15,7 @@ from . import (
     e4_real_retrieval_wall,
     e5_real_compression_probe,
     e5_real_compression_wall,
+    e5b_real_compression_shape,
 )
 
 REGISTRY: dict[str, Callable] = {
@@ -28,6 +29,7 @@ REGISTRY: dict[str, Callable] = {
     # real-encoder truncation wall we actually run.
     "e5_real_compression_wall": e5_real_compression_wall.run,
     "e5_real_compression_probe": e5_real_compression_probe.run,
+    "e5b_real_compression_shape": e5b_real_compression_shape.run,
 }
 
 

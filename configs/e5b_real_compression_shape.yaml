@@ -1,0 +1,25 @@
+# E5b — Multi-token real compression: recover capacity + reproduce F6 on a real encoder.
+# Pools cached per-fact embeddings into m chunks (each truncated to d_c). Two sweeps:
+# wall (m=n_f, vary D_c) and shape (fixed D_c, vary m -> F6 interior optimum). Kaggle-first.
+name: e5b_real_compression_shape
+experiment: e5b_real_compression_shape
+seed: 0
+verbose: false
+
+params:
+  model: mixedbread-ai/mxbai-embed-large-v1
+  P_train: 256
+  P_eval: 128
+  steps: 500
+  lr: 0.002
+  seeds: [0, 1]
+  key_trunc: 64
+
+  wall_n_f: [4, 8, 16, 32]
+  wall_d_c: [2, 4, 8, 16, 32, 64]
+
+  # F6 shape test in a thin-slot regime so both extremes can collapse (m=1 fat-but-few-facts,
+  # m=32 -> d_c=2 thin): interior optimum expected if F6 holds for a real encoder.
+  shape_n_f: 32
+  shape_D_c: 64
+  shape_m: [1, 2, 4, 8, 16, 32]
