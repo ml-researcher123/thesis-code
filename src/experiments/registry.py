@@ -7,12 +7,18 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import e1_retrieval_capacity, e2_compression_capacity, e3_compounding
+from . import (
+    e1_retrieval_capacity,
+    e2_compression_capacity,
+    e3_compounding,
+    e3b_dependence,
+)
 
 REGISTRY: dict[str, Callable] = {
     "e1_retrieval_capacity": e1_retrieval_capacity.run,
     "e2_compression_capacity": e2_compression_capacity.run,
     "e3_compounding": e3_compounding.run,
+    "e3b_dependence": e3b_dependence.run,
     # "e4_allocation": e4_allocation.run,
     # "e5_facetlens": e5_facetlens.run,
     # "e6_generalization": e6_generalization.run,
