@@ -1,0 +1,22 @@
+[     0.0s] === run 'c4_facetlens' ===
+[     0.0s] host=3bf7ce70611d python=3.12.13 config=/kaggle/working/repo/configs/c4_facetlens.yaml
+[     0.2s] device=cuda seed=0
+[     0.2s] C4 facet-lens | N=144 F=6 G=3 budgets=[6, 12, 24, 48, 96] modes=['single', 'multiview', 'facetlens'] device=cuda
+[     0.2s]   pattern: 18 queries, group size ~48
+[     5.6s]   single     d_total=  6 | realizability=0.000+-0.000
+[     9.5s]   single     d_total= 12 | realizability=0.000+-0.000
+[    13.4s]   single     d_total= 24 | realizability=1.000+-0.000
+[    17.5s]   single     d_total= 48 | realizability=1.000+-0.000
+[    21.3s]   single     d_total= 96 | realizability=1.000+-0.000
+[    27.8s]   multiview  d_total=  6 | realizability=0.037+-0.026
+[    34.2s]   multiview  d_total= 12 | realizability=0.019+-0.026
+[    40.8s]   multiview  d_total= 24 | realizability=0.944+-0.000
+[    47.3s]   multiview  d_total= 48 | realizability=1.000+-0.000
+[    53.9s]   multiview  d_total= 96 | realizability=1.000+-0.000
+[    58.7s]   facetlens  d_total=  6 | realizability=0.667+-0.000
+[    63.6s]   facetlens  d_total= 12 | realizability=1.000+-0.000
+[    68.7s]   facetlens  d_total= 24 | realizability=1.000+-0.000
+[    73.8s]   facetlens  d_total= 48 | realizability=1.000+-0.000
+[    78.7s]   facetlens  d_total= 96 | realizability=1.000+-0.000
+[    79.0s]   saved figure -> c4_facetlens_escape.png
+[    79.0s] === done in 78.8s -> /kaggle/working/repo/outputs/c4_facetlens ===

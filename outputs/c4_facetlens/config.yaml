@@ -1,0 +1,26 @@
+name: c4_facetlens
+experiment: c4_facetlens
+seed: 0
+verbose: false
+params:
+  N: 144
+  F: 6
+  G: 3
+  budgets:
+  - 6
+  - 12
+  - 24
+  - 48
+  - 96
+  modes:
+  - single
+  - multiview
+  - facetlens
+  seeds:
+  - 0
+  - 1
+  - 2
+  steps: 900
+  lr: 0.05
+  margin: 1.0
+  realize_thresh: 0.99

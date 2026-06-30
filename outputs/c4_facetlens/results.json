@@ -1,0 +1,68 @@
+{
+  "experiment": "c4_facetlens",
+  "config_params": {
+    "N": 144,
+    "F": 6,
+    "G": 3,
+    "budgets": [
+      6,
+      12,
+      24,
+      48,
+      96
+    ],
+    "modes": [
+      "single",
+      "multiview",
+      "facetlens"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "steps": 900,
+    "lr": 0.05,
+    "margin": 1.0,
+    "realize_thresh": 0.99
+  },
+  "curve": {
+    "single": {
+      "6": 0.0,
+      "12": 0.0,
+      "24": 1.0,
+      "48": 1.0,
+      "96": 1.0
+    },
+    "multiview": {
+      "6": 0.03703703731298447,
+      "12": 0.018518518656492233,
+      "24": 0.944444477558136,
+      "48": 1.0,
+      "96": 1.0
+    },
+    "facetlens": {
+      "6": 0.6666666865348816,
+      "12": 1.0,
+      "24": 1.0,
+      "48": 1.0,
+      "96": 1.0
+    }
+  },
+  "critical_budget": {
+    "single": 24,
+    "multiview": 48,
+    "facetlens": 12
+  },
+  "realize_thresh": 0.99,
+  "figure": "c4_facetlens_escape.png",
+  "_meta": {
+    "name": "c4_facetlens",
+    "experiment": "c4_facetlens",
+    "seconds": 78.79,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "3bf7ce70611d",
+    "finished_at": "2026-06-30T16:28:25"
+  }
+}
