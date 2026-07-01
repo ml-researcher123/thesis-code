@@ -417,4 +417,75 @@ experiments use publicly available encoders (\texttt{mxbai-embed-large-v1},
 \bibliography{references}
 \bibliographystyle{iclr2026_conference}
 
+\appendix
+\section{Summary of experiments}
+\label{app:experiments}
+
+Table~\ref{tab:exps} collects every experiment behind the claims in the main text, with the
+setting and the headline number, so the results can be traced to a single row. Each corresponds to
+a committed configuration and a fixed seed; headline claims use at least three seeds.
+
+\begin{table}[h]
+\caption{All experiments, their setting, and the headline result. ``Free'' denotes the
+free-embedding capacity primitive of Section~\ref{sec:setup}; ``real'' denotes a frozen production
+encoder. Budgets are embedding/code dimensions.}
+\label{tab:exps}
+\centering\small
+\begin{tabular}{@{}llp{4.4cm}p{4.6cm}@{}}
+\toprule
+ID & Kind & Setting & Headline result\\
+\midrule
+E1/E1c & free & all-pairs \& random-$k$ patterns; sweep $\dr$, $n_d$; 5 seeds & sharp wall; $\dr^\star$ grows $8\!\to\!11$ as $n_d\,40\!\to\!400$; ``$d/n_d$'' law refuted ($R^2{=}0.18$)\\
+E2 & free & slot-memory read; sweep $D_c$, $n_f$ & compression wall $D_c^\star\!\approx\!2n_f$\\
+E4 & real & mxbai / SciFact; Matryoshka trunc.\ & recall@10 $0.09\!\to\!0.87$; flat past $\dr{=}512$\\
+E4b & real & arctic-m / SciFact; Matryoshka & $97\%$ of full recall by $\dr{=}256$\\
+E4c & real & mxbai / FiQA (domain shift) & $92\%$ of full recall by $\dr{=}256$\\
+E4d & real & bge-large / SciFact; \textbf{PCA} trunc.\ & saturates at $\dr{=}256$ ($98.5\%$)\\
+E5/E5b & real & mxbai code; light read probe & one vector $\approx$ one fact ($0.98\!\to\!0.20$); multi-token recovers to $0.99$\\
+E8 & real & LIMIT; 3 embedders; 50k / 46 docs & recall@100 $=2.8/8.2/4.5\%$ (full)\\
+E3 & free & shared budget $B{=}\dr{+}D_c$ & compounding gap $0.389$ at $B{=}64$\\
+E3b & free & Gaussian copula over stage successes & sign of gap set by $\rho$; Fr\'echet-bounded\\
+E7 & real & mxbai retriever + compressor; per-item margins & $\rho_\phi\!=\!+0.009$; product law exact to $\sim\!0.001$\\
+E6 & real & mxbai; one corpus; $N{=}2000$ & gap $0.392$ at $B{=}128$; optimum interior $64{:}64$\\
+C4 & free & facet pattern; single / multiview / routed & routed $\dr^\star{=}12$ vs single $24$; multiview $48$\\
+C4b & real & frozen mxbai; 10 facets; learned lenses & single ties routed ($\dr^\star{=}40$); no transfer\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Implementation details}
+\label{app:impl}
+
+\paragraph{Free-embedding capacity primitive.} For a target relevance pattern $A\in\{0,1\}^{M\times N}$
+we optimize unconstrained document vectors $X\in\R^{N\times d}$ and query vectors $Q\in\R^{M\times d}$
+with Adam on a pairwise margin loss that, per query, pushes the smallest relevant score above the
+largest non-relevant score by a margin; realizability is the fraction of queries for which this
+holds strictly. Because $X,Q$ are free, this upper-bounds any encoder of dimension $d$, so a wall
+here is a wall for every encoder. The all-pairs pattern sets every document pair as one query's gold
+set ($k{=}2$); random-$k$ draws $n_q$ distinct $k$-subsets.
+
+\paragraph{Compression probe.} A passage of $n_f$ facts is written as $m$ codes of width $\dc$; a
+query attends over the $m$ codes with a small read head and decodes the queried value with cross-entropy.
+On real encoders the codes are truncated frozen embeddings, and only the light read head is trained,
+which converges reliably and generalizes to held-out passages, so it measures the code's capacity
+rather than the trainability of a full soft-token compressor (which, in our hands, stays at chance
+without a large training budget).
+
+\paragraph{Copula composition and measured $\rho$.} We place a Gaussian copula on the two binary
+per-item success events with the marginals fixed at the measured stage recalls and correlation
+$\rho$, and estimate pipeline recall by Monte-Carlo; the limits $\rho\in\{-1,0,+1\}$ recover the
+Fr\'echet lower bound, the product, and the minimum. To measure $\rho$ on a real pipeline we take
+the phi coefficient of the two binary successes and the Pearson correlation of two continuous
+difficulty margins (retrieval gold-minus-best-distractor; compression correct-minus-best-other logit).
+
+\paragraph{Facet-lens.} Each lens is a learned linear map $\R^{D}\!\to\!\R^{d/K}$ applied to frozen
+document and query embeddings, scored by $\ip{W_q^f q}{W_d^f d}$; the router sends a query of facet
+$f$ to lens $f$, so the doc-side budget $d$ is split into $K$ equal codes. Single is one full-width
+lens; generic multiview keeps $K$ lenses but scores by the max over views without routing. We train
+all conditions with the same objective and budget and report mean average precision.
+
+\paragraph{Compute.} All runs use a single commodity GPU (Kaggle T4 or P100). Real-encoder runs
+encode the corpus once and cache it; wall-clock ranges from seconds (LIMIT-small; the free-vector
+sweeps) to about twenty-six minutes for the $50$k-document LIMIT-full sweep across three embedders.
+
 \end{document}
