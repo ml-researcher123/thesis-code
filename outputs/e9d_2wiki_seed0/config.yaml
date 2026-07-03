@@ -1,0 +1,32 @@
+name: e9d_2wiki_seed0
+experiment: e9_real_qa
+seed: 0
+params:
+  dataset: 2wiki
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-1.5B-Instruct
+  query_prompt: 'Represent this sentence for searching relevant passages: '
+  split: validation
+  n_q: 300
+  seed_data: 0
+  top_k: 4
+  budget_tokens: 160
+  budgets:
+  - 128
+  - 256
+  splits:
+  - 16
+  - 32
+  - 48
+  - 64
+  - 80
+  - 96
+  - 112
+  - 128
+  - 144
+  - 160
+  - 176
+  - 192
+  - 224
+  max_new_tokens: 24
+  gen_batch: 16
