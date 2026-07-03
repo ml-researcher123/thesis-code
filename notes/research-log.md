@@ -374,3 +374,36 @@ three real embedder families, two datasets, PCA truncation, AND the canonical LI
 (compounding) and C3 (allocation) hold synthetically and end-to-end on real models, with ρ
 measured (≈0, multiplicative). C4 (escape) is demonstrated in the worst case and honestly scoped
 out of the real-encoder regime. The research is ready to be written.
+
+## 2026-07-01 (later still) — E9: real HotpotQA RAG confirms compounding, exposes a grid gap
+
+Closed the biggest gap flagged when comparing against the "What Survives Into Context" diagnostic
+paper: ran C2/C3 on a REAL multi-hop benchmark with a REAL frozen reader and REAL EM/F1, not just
+the synthetic E6 corpus. Built E9: HotpotQA questions pooled into one shared corpus (a genuine
+retrieval problem, not per-question isolated), real embedder retrieval truncated to d_r, query-
+conditioned sentence selection under a token budget (d_c) as the compression stage, Qwen2.5-1.5B
+answers, scored by SQuAD EM/F1 + answer-in-context.
+
+Hit two infra snags mid-run: (1) local git push started failing with 403 "permission denied" —
+turned out to be a stale cached Windows credential (GitHub for Visual Studio entry) holding an
+invalid token; user refreshed it and the push went through. (2) Worried the same stale-token issue
+was silently killing the Kaggle watch loop's push-back (a real risk — the loop's `except: continue`
+would hide it), but the console log the user pasted showed the run actively progressing (correct
+HotpotQA sizes, correct embedding dims) — it was just slow first-run downloads, not a failure.
+
+**Result (E9 pilot, 1 seed, n_q=300):** at B=128, best split 96:32 reaches F1=0.337 vs standalone
+retrieval 0.387 / standalone compression 0.564 — a real **compounding gap of +0.050 F1**, i.e. C2
+holds on real answer quality. At B=256 the gap is −0.011 (≈null), consistent with the theory that
+compounding shrinks as budget grows (matches E3/E6's own direction). But: F1 climbs monotonically
+to d_r=96 — the largest d_r in the tested grid — at BOTH budgets, so we have not actually located
+where retrieval budget stops paying off. C3's "interior optimum" claim, demonstrated cleanly on
+synthetic E6, is NOT yet demonstrated on real QA — an honest gap, not a result to paper over.
+
+**Decision:** widen the d_r grid to 224 (well past the point where it might turn over) and add
+seeds {0,1,2} for real variance, since the pilot took only 351s on a T4 — three widened runs cost
+under 30 minutes of GPU time, trivial against the weekly budget. Queued as e9b_real_qa_seed{0,1,2}.
+Recorded the pilot honestly as F19 (PILOT status) rather than waiting to report anything.
+
+Next: once E9b lands, finalize F19, fold the real EM/F1 numbers into the paper's compounding (§5)
+and allocation (§6) sections, and reassess whether the real-QA gap fully closes the comparison
+against the diagnostic paper's rigor bar.

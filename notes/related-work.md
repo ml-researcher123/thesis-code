@@ -30,3 +30,19 @@ Positioning + a watch-list. The biggest risk to this paper is someone publishing
 > Prior work bounds retrieval *or* studies compression; nobody bounds **the composition**.
 > We show the two fixed-`d` bottlenecks compound, derive the allocation between them, and
 > escape both with a multi-view representation.
+
+## Threat monitor — 2026-07-01 scan
+Weekly arXiv scan for anyone scooping C1 (unified capacity wall) or C2 (compounding). No direct
+scoop found; the unified retrieval+compression capacity account and the cross-stage allocation
+still appear unclaimed. Neighbors to cite/position against:
+- **Fixed RAG Compression Collapses Measured Reader Scaling** (arXiv:2606.21807, Panthi &
+  Abdelfattah). Compression×reader-scale: "compression gain decreases with reader baseline
+  (9/10 settings p<0.05); rescues weak readers by removing noise, harms strong readers by
+  dropping details." NOT compounding and NOT cross-stage allocation, so no threat to C1-C3 — a
+  clean related-work cite for us. NB: it strongly overlaps the *diagnostic paper's* reader-ladder
+  (condition 4: edge absorbed by 7B, reverses by 14B) — worth flagging for that paper's positioning.
+- **DAST** (2502.11493) — dynamic allocation of *soft tokens* (compression-only budget), adjacent
+  to C3 but single-stage. **ElasticMem** (2605.30690) — elastic latent budget over retrieved chunks.
+- **QRAG** (embedding PCA 8-bit + residual 4-bit, 3-5x at 0.95 recall) and adaptive context
+  compression (2507.22931) — compression *methods*, not capacity theory; cite as motivation for
+  the budget being scarce, not as competitors to the bound.
