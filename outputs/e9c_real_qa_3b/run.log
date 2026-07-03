@@ -268,3 +268,34 @@ huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/hotpot_qa@1908d
     raise HfUriError(uri=raw, msg=f"Repository id must be 'namespace/name', got '{repo_id}'.")
 huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/hotpot_qa@1908d6afbbead072334abe2965f91bd2709910ab/.huggingface.yaml'. Repository id must be 'namespace/name', got 'hotpot_qa'.
 
+[     0.0s] === run 'e9c_real_qa_3b' ===
+[     0.0s] host=fde4aeba72b5 python=3.12.13 config=/kaggle/working/repo/configs/e9c_real_qa_3b.yaml
+[     0.3s] device=cuda seed=0
+[    23.8s] E9 real QA | embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-3B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[    32.8s]   pooled corpus: 2983 paragraphs; 300 questions
+[    77.6s]   encoded 2983 paras, 12421 sentences, dim=1024
+[   106.5s]   reader loaded: Qwen/Qwen2.5-3B-Instruct (3.09B)
+[   143.1s]   [B=128] d_r=  16 d_c= 112 | recall=0.277 aic=0.220 f1=0.126 em=0.103
+[   182.3s]   [B=128] d_r=  32 d_c=  96 | recall=0.475 aic=0.340 f1=0.21 em=0.163
+[   224.7s]   [B=128] d_r=  48 d_c=  80 | recall=0.622 aic=0.420 f1=0.265 em=0.203
+[   265.7s]   [B=128] d_r=  64 d_c=  64 | recall=0.690 aic=0.453 f1=0.266 em=0.207
+[   306.8s]   [B=128] d_r=  80 d_c=  48 | recall=0.733 aic=0.460 f1=0.275 em=0.21
+[   348.1s]   [B=128] d_r=  96 d_c=  32 | recall=0.762 aic=0.443 f1=0.243 em=0.193
+[   391.0s]   [B=128] d_r= 112 d_c=  16 | recall=0.760 aic=0.423 f1=0.237 em=0.19
+[   476.6s]   [B=128] best=80:48 f1=0.275 | standalone_R=0.328 standalone_C=0.522 compounding_gap=0.053
+[   514.8s]   [B=256] d_r=  16 d_c= 240 | recall=0.277 aic=0.227 f1=0.141 em=0.12
+[   553.1s]   [B=256] d_r=  32 d_c= 224 | recall=0.475 aic=0.347 f1=0.242 em=0.193
+[   594.8s]   [B=256] d_r=  48 d_c= 208 | recall=0.622 aic=0.423 f1=0.271 em=0.193
+[   636.1s]   [B=256] d_r=  64 d_c= 192 | recall=0.690 aic=0.470 f1=0.27 em=0.21
+[   674.8s]   [B=256] d_r=  80 d_c= 176 | recall=0.733 aic=0.507 f1=0.301 em=0.23
+[   714.7s]   [B=256] d_r=  96 d_c= 160 | recall=0.762 aic=0.497 f1=0.305 em=0.233
+[   754.5s]   [B=256] d_r= 112 d_c= 144 | recall=0.760 aic=0.480 f1=0.296 em=0.223
+[   794.9s]   [B=256] d_r= 128 d_c= 128 | recall=0.785 aic=0.493 f1=0.312 em=0.237
+[   837.9s]   [B=256] d_r= 144 d_c= 112 | recall=0.797 aic=0.490 f1=0.298 em=0.217
+[   880.2s]   [B=256] d_r= 160 d_c=  96 | recall=0.805 aic=0.523 f1=0.294 em=0.223
+[   921.6s]   [B=256] d_r= 176 d_c=  80 | recall=0.807 aic=0.530 f1=0.313 em=0.237
+[   967.4s]   [B=256] d_r= 192 d_c=  64 | recall=0.805 aic=0.523 f1=0.297 em=0.223
+[  1011.0s]   [B=256] d_r= 224 d_c=  32 | recall=0.828 aic=0.483 f1=0.269 em=0.21
+[  1096.6s]   [B=256] best=176:80 f1=0.313 | standalone_R=0.338 standalone_C=0.533 compounding_gap=0.024
+[  1096.9s]   saved figure -> e9_real_qa.png
+[  1097.0s] === done in 1096.7s -> /kaggle/working/repo/outputs/e9c_real_qa_3b ===
