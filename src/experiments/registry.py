@@ -20,6 +20,7 @@ from . import (
     e6_real_allocation,
     e7_rho,
     e8_limit,
+    e9_real_qa,
     c4_facetlens,
     c4b_real_facetlens,
 )
@@ -40,6 +41,7 @@ REGISTRY: dict[str, Callable] = {
     "e6_real_allocation": e6_real_allocation.run,
     "e7_rho": e7_rho.run,
     "e8_limit": e8_limit.run,
+    "e9_real_qa": e9_real_qa.run,
     "c4_facetlens": c4_facetlens.run,
     "c4b_real_facetlens": c4b_real_facetlens.run,
 }

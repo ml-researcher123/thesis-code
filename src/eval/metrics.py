@@ -30,3 +30,57 @@ def ndcg_at_k(ranked: list[int], gold: set[int], k: int) -> float:
 def mean_std(values: list[float]) -> tuple[float, float]:
     arr = np.asarray(values, dtype=float)
     return float(arr.mean()), float(arr.std(ddof=1) if arr.size > 1 else 0.0)
+
+
+# ---- span-answer QA metrics (SQuAD/HotpotQA style) : used by E9 real-QA ----
+
+import re
+import string
+
+
+def normalize_answer(s: str) -> str:
+    """Lowercase, strip punctuation/articles/extra whitespace (SQuAD normalization)."""
+    def remove_articles(text):
+        return re.sub(r"\b(a|an|the)\b", " ", text)
+
+    def white_space_fix(text):
+        return " ".join(text.split())
+
+    def remove_punc(text):
+        return "".join(ch for ch in text if ch not in set(string.punctuation))
+
+    return white_space_fix(remove_articles(remove_punc(s.lower())))
+
+
+def exact_match(pred: str, gold: str) -> float:
+    return float(normalize_answer(pred) == normalize_answer(gold))
+
+
+def token_f1(pred: str, gold: str) -> float:
+    """SQuAD token-level F1 between a predicted and a gold answer string."""
+    pred_toks = normalize_answer(pred).split()
+    gold_toks = normalize_answer(gold).split()
+    if not pred_toks or not gold_toks:
+        return float(pred_toks == gold_toks)  # both empty -> 1, one empty -> 0
+    common: dict[str, int] = {}
+    for t in pred_toks:
+        if t in gold_toks:
+            common[t] = min(pred_toks.count(t), gold_toks.count(t))
+    num_same = sum(common.values())
+    if num_same == 0:
+        return 0.0
+    precision = num_same / len(pred_toks)
+    recall = num_same / len(gold_toks)
+    return 2 * precision * recall / (precision + recall)
+
+
+def answer_in_context(answer: str, context: str) -> float:
+    """1 if the normalized gold answer is a contiguous token subsequence of the context.
+
+    The 'answer-in-context' diagnostic: does the answer survive into what the reader sees?
+    """
+    a = normalize_answer(answer)
+    c = normalize_answer(context)
+    if not a:
+        return 0.0
+    return float(f" {a} " in f" {c} " or c.startswith(a + " ") or c.endswith(" " + a) or c == a)

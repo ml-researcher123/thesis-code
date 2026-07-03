@@ -1,0 +1,21 @@
+# E9 — Real end-to-end RAG QA on HotpotQA: compounding (C2) + allocation (C3) on real EM/F1.
+# Closes the gap vs. synthetic E6: real multi-hop benchmark, real retriever (Matryoshka-truncated
+# to d_r), query-conditioned sentence selection (d_c) under a token budget, and a REAL frozen
+# reader scored by EM/F1 (plus answer-in-context). Sweeps the split of B = d_r + d_c. Kaggle-first.
+name: e9_real_qa
+experiment: e9_real_qa
+seed: 0
+
+params:
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-1.5B-Instruct
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  split: validation
+  n_q: 300
+  seed_data: 0
+  top_k: 4
+  budget_tokens: 160
+  budgets: [128, 256]
+  splits: [32, 48, 64, 96]
+  max_new_tokens: 24
+  gen_batch: 16
