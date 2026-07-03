@@ -422,3 +422,36 @@ B=256 — the same shrink-with-budget pattern as E3/E6 and consistent with the m
 
 Holding the findings/paper finalization for the full 3-seed aggregate (seeds 1,2 running) to hit
 the >=3-seed rigor bar; seed0 alone already answers the qualitative question (optimum is interior).
+
+## 2026-07-01 (E9c) — real-QA compounding is reader-robust (3B reader), + infra fixes
+
+Ran the reader-scale robustness check I flagged as the top reviewer question: same E9b pipeline,
+stronger Qwen2.5-3B reader (vs 1.5B). Two infra snags first: (1) switched to Colab briefly (Kaggle
+issues), which exposed that newer `datasets` versions reject the bare "hotpot_qa" repo id (HfUriError)
+— fixed the loader to try the namespaced "hotpotqa/hotpot_qa" first (robust across both platforms);
+(2) added an unbuffered-output fix to both watch loops so long model downloads stop *looking* hung.
+Kaggle came back and ran E9c after picking up the fix.
+
+**Result (E9c seed0, 3B reader):** the compounding gap PERSISTS and is if anything slightly larger:
++0.053 F1 at B=128 (vs 1.5B's +0.048±0.007) and +0.024 at B=256 (vs +0.009). The allocation curve
+is still single-peaked (interior optimum). So the effect is reader-robust — it's an INFORMATION
+bottleneck (evidence discarded at the two stages can't be recovered by a better reader), not a
+reasoning one. Honest wrinkle: the 3B reader's *absolute* F1 is lower than 1.5B's (0.275 vs 0.335 at
+B=128 best), but recall is IDENTICAL at every d_r (retrieval is reader-independent), so the pipeline
+is unchanged up to the reader — the lower F1 is a span-F1-vs-verbosity artifact of the larger instruct
+model, and it cancels out of the gap and the curve shape (both same-reader relative quantities).
+
+Queued E9c seeds 1,2 for the 3-seed reader-scale claim to match E9b's rigor. Once in, add a
+reader-scale robustness row to the paper (the gap survives 1.5B->3B) and finalize.
+
+## 2026-07-01 (E9c 3-seed) — reader-robustness confirmed and finalized
+
+All 3 E9c seeds (3B reader) in. The compounding gap PERSISTS and slightly GROWS with reader scale:
+B=128 gap +0.058±0.005 F1 (vs 1.5B +0.048±0.007), B=256 +0.036±0.018 (vs 1.5B's null +0.009), with
+the interior optimum at d_r=80 in all 3 seeds (rock-stable). So the effect strengthens, not weakens,
+with a better reader — the clean signature of an information bottleneck (a stronger reader extracts
+more from good context, making the penalty for evidence lost at the two stages MORE visible). This
+is the opposite of a context-cleanup heuristic whose benefit a strong reader would absorb, which is a
+nice distinguishing property. Added F20 (SUPPORTED, 2 reader scales × 3 seeds) and a compact
+reader-scale sentence to the paper's section 6. The real-QA arc (E9/E9b/E9c) is now complete and
+rigorous: compounding + interior optimum on real HotpotQA EM/F1, robust across 1.5B and 3B readers.

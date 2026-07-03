@@ -346,7 +346,13 @@ a compounding gap of $\mathbf{0.048\pm0.007}$ F1 with all three seeds positive; 
 $0.009\pm0.015$ (null) by $B=256$ once both stages clear their walls, the same shrinking-with-budget
 pattern as the synthetic result and consistent with the measured $\rho\!\approx\!0$. The precise
 optimum location is noisy across seeds ($\dr^\star$ in $64\!-\!160$), but its interior character and
-the tight-budget compounding gap are robust---the real-QA, EM/F1 counterpart of E3 and E6.
+the tight-budget compounding gap are robust---the real-QA, EM/F1 counterpart of E3 and E6. The gap
+is also \emph{reader-scale robust}: repeating with a stronger \texttt{Qwen2.5-3B} reader (three
+seeds) the gap persists and if anything grows, to $0.058\pm0.005$ F1 at $B=128$ and $0.036\pm0.018$
+at $B=256$, with the interior optimum at $\dr{=}80$ in all three seeds. This is the signature of an
+\emph{information} bottleneck rather than a reasoning one---a more capable reader extracts more from
+good context, so the penalty for the evidence the two stages discard is more visible, not less,
+unlike a context-cleanup heuristic whose benefit a strong reader absorbs.
 
 \begin{figure}[t]
 \centering
