@@ -96,8 +96,8 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
 | Retrieval wall (C1) | E1 | E4 mxbai/SciFact; **E4b arctic/SciFact; E4c mxbai/FiQA; E4d bge/PCA**; **E8 LIMIT ×3 embedders** |
 | Compression wall (C1) | E2 | E5 / E5b (mxbai) |
 | Shape effect F6 (+scope) | E2 | E5b (boundary) |
-| Compounding (C2) | E3, E3b | E6; **E7 (ρ≈0 measured + copula validated)** |
-| Allocation (C3) | E3 | E6 |
+| Compounding (C2) | E3, E3b | E6; E7 (ρ≈0 measured + copula validated); **E9/E9b real HotpotQA EM/F1 (+0.048±0.007 F1 gap); E9c reader-robust 3B (+0.058); E9d cross-dataset 2Wiki (+0.048)** |
+| Allocation (C3) | E3 | E6; **E9b real HotpotQA interior optimum (3 seeds); replicated E9c/E9d** |
 | Facet-lens escape (C4) | C4 (d*=12 vs 24; routing > generic multiview) | **C4b: does NOT transfer — single ties routed lenses (d*=40) on mxbai (scoped negative)** |
 
 ## Headline numbers (final, from outputs/)
@@ -112,14 +112,17 @@ All experiments are config-driven (`configs/`), seeded, run via `kaggle/run.py`;
   real RAG is **multiplicative**, so C3's allocation applies cleanly.
 - **Facet-lens (C4b, mxbai): single & routed lenses tie at d*=40**; the free-vector escape does
   not transfer to strong real encoders (honest scope; the practical lever is allocation, not multi-view).
+- **Real-QA (E9/E9b/E9c/E9d, HotpotQA+2Wiki):** compounding gap **~+0.05 F1 at tight budget** and an
+  **interior allocation optimum** on real EM/F1 — robust across 2 datasets, 2 reader scales (1.5B/3B),
+  3 seeds each; gap *grows* with reader scale (information-bottleneck signature, not reasoning).
 
-## TODO before submission
-- [x] E6 mxbai numbers in.
-- [x] Generality: 2nd embedder (arctic) + 2nd dataset (FiQA) + PCA (bge) + canonical LIMIT — DONE.
-- [x] ρ measured for a real retriever+compressor (E7): ρ≈0, copula validated (closes F10).
-- [x] Real-encoder facet-lens (C4b): DONE — honest negative (escape does not transfer; scopes C4).
-- [x] C4 facet-lens escape (free-vector): d*=12 vs 24; routing > generic multiview.
-- [ ] **Make the 5 headline figures publication-grade** (E1/E4 wall, E8 LIMIT bars, E6 allocation,
-      E7 ρ-validation, C4/C4b escape-and-scope).
-- [ ] Present C1 as a rigorous empirical characterization + the misalignment mechanism (no closed form).
-- [ ] **Write LaTeX in `paper/`; port figures from `outputs/`** — the experimental program is complete.
+## Status: experimental program COMPLETE. Paper drafted + compiles (paper/latex/iclr2026/main.tex,
+## 8pp main text, 47 refs). Remaining = write-up refinement + submission prep (ICLR 2027, ~Sept 2026).
+- [x] All four contributions validated on real models (C1 walls+generality+LIMIT; C2 compounding
+      synthetic+ρ+real-QA; C3 allocation synthetic+real-QA; C4 escape + honest real-encoder scope).
+- [x] Real-QA end-to-end EM/F1 validation (E9 family) — closes the "synthetic-only" gap.
+- [x] LaTeX draft written, compiles clean (main.tex, 8pp), 47 verified references, figures ported.
+- [ ] (polish) Publication-grade pass on the ported result figures; port the 2027 style files when
+      ICLR releases them (currently on 2026 style — cosmetic year swap).
+- [ ] (optional stretch) 3rd real-QA dataset (MuSiQue) or ρ-under-adversarial-pressure — diminishing
+      returns; the program is already thorough. Present C1 as empirical characterization (no closed form).
