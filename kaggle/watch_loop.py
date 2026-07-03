@@ -123,10 +123,14 @@ def main() -> int:
             for cfg in todo:
                 name = os.path.splitext(os.path.basename(cfg))[0]
                 print(f"[watch] RUN {name}", flush=True)
+                # PYTHONUNBUFFERED forces the child (and tqdm progress bars inside it) to
+                # flush immediately instead of block-buffering, which otherwise makes long
+                # downloads look silent/hung through the notebook's output capture.
+                child_env = {**os.environ, "PYTHONUNBUFFERED": "1"}
                 rc = subprocess.run(
                     [sys.executable, os.path.join(workdir, "kaggle", "run.py"),
                      "--config", cfg, "--device", device],
-                    cwd=workdir, text=True,
+                    cwd=workdir, text=True, env=child_env,
                 ).returncode
                 # push whatever was produced (results or a FAILED.txt) so Claude sees it
                 commit_and_push(workdir, branch, name + ("" if rc == 0 else " (FAILED)"))
