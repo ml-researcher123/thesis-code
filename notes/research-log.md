@@ -455,3 +455,23 @@ is the opposite of a context-cleanup heuristic whose benefit a strong reader wou
 nice distinguishing property. Added F20 (SUPPORTED, 2 reader scales × 3 seeds) and a compact
 reader-scale sentence to the paper's section 6. The real-QA arc (E9/E9b/E9c) is now complete and
 rigorous: compounding + interior optimum on real HotpotQA EM/F1, robust across 1.5B and 3B readers.
+
+## 2026-07-01 (E9d 3-seed) — real-QA compounding is cross-dataset general (2Wiki)
+
+Added a second multi-hop dataset (2WikiMultihopQA) to test whether the real-QA compounding is a
+HotpotQA artifact. First hit an infra snag: E9d failed with CUDA "no kernel image is available for
+the device" — NOT my code (2Wiki loaded fine on Kaggle, 3000 paragraphs). Root cause: the bootstrap's
+`pip install -r requirements.txt` pinned torch>=2.1, which upgraded Kaggle's GPU-matched torch to a
+generic PyPI wheel lacking kernels for the session's GPU. Fixed requirements to never install torch
+(preinstalled + GPU-matched on Kaggle/Colab); user restarted the kernel and it ran clean.
+
+**Result (E9d, 2Wiki, 3 seeds, 1.5B):** the compounding + interior optimum REPLICATE. B=128 gap
++0.048±0.014 F1 — matching HotpotQA's +0.048±0.007 essentially exactly — with a single-peaked
+interior optimum (peak d_r≈96, declining tail), null gap at B=256. So the real-QA validation now
+spans 2 datasets × 2 reader scales (HotpotQA 1.5B/3B + 2Wiki 1.5B), 3 seeds each, all with a
+~+0.05 F1 tight-budget compounding gap and an interior allocation optimum. Added F21 (SUPPORTED),
+a compact cross-dataset clause + 2 appendix rows (E9c/E9d) to the paper. Main text still 8pp.
+
+The real-QA program (E9/E9b/E9c/E9d) is now comprehensively validated and, I think, closes the
+gap vs the diagnostic paper's rigor bar: real benchmarks, real readers, EM/F1, multi-seed,
+cross-dataset, cross-reader-scale, with the mechanism (information vs reasoning bottleneck) tested.
