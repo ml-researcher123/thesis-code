@@ -101,6 +101,7 @@ def run(ctx: RunContext):
 
     embedder_name = p.get("embedder", "mixedbread-ai/mxbai-embed-large-v1")
     reader_name = p.get("reader", "Qwen/Qwen2.5-1.5B-Instruct")
+    dataset = p.get("dataset", "hotpotqa")          # "hotpotqa" or "2wiki"
     split = p.get("split", "validation")
     n_q = p.get("n_q", 300)
     seed = p.get("seed_data", 0)
@@ -112,9 +113,9 @@ def run(ctx: RunContext):
     max_new_tokens = p.get("max_new_tokens", 24)
     gen_batch = p.get("gen_batch", 16)
 
-    log(f"E9 real QA | embedder={embedder_name} reader={reader_name} n_q={n_q} "
+    log(f"E9 real QA | dataset={dataset} embedder={embedder_name} reader={reader_name} n_q={n_q} "
         f"budgets={budgets} B_tok={budget_tokens} device={ctx.device}")
-    corpus, questions = load_hotpotqa(split, n_q, seed)
+    corpus, questions = load_hotpotqa(split, n_q, seed, dataset=dataset)
     pids = list(corpus)
     pid_index = {pid: i for i, pid in enumerate(pids)}
     log(f"  pooled corpus: {len(pids)} paragraphs; {len(questions)} questions")
