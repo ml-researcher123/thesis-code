@@ -1,0 +1,31 @@
+[     0.0s] === run 'e9d_2wiki_seed2' ===
+[     0.0s] host=cba21c8eba40 python=3.12.13 config=/kaggle/working/repo/configs/e9d_2wiki_seed2.yaml
+[     0.3s] device=cuda seed=2
+[    23.6s] E9 real QA | dataset=2wiki embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-1.5B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[    36.7s]   pooled corpus: 3000 paragraphs; 300 questions
+[    69.4s]   encoded 3000 paras, 9421 sentences, dim=1024
+[    83.2s]   reader loaded: Qwen/Qwen2.5-1.5B-Instruct (1.54B)
+[   101.1s]   [B=128] d_r=  16 d_c= 112 | recall=0.174 aic=0.110 f1=0.148 em=0.123
+[   118.9s]   [B=128] d_r=  32 d_c=  96 | recall=0.358 aic=0.160 f1=0.218 em=0.197
+[   137.5s]   [B=128] d_r=  48 d_c=  80 | recall=0.459 aic=0.227 f1=0.237 em=0.217
+[   156.3s]   [B=128] d_r=  64 d_c=  64 | recall=0.522 aic=0.270 f1=0.234 em=0.213
+[   176.4s]   [B=128] d_r=  80 d_c=  48 | recall=0.573 aic=0.280 f1=0.252 em=0.227
+[   197.2s]   [B=128] d_r=  96 d_c=  32 | recall=0.613 aic=0.273 f1=0.256 em=0.23
+[   217.1s]   [B=128] d_r= 112 d_c=  16 | recall=0.627 aic=0.260 f1=0.247 em=0.213
+[   257.6s]   [B=128] best=96:32 f1=0.256 | standalone_R=0.324 standalone_C=0.477 compounding_gap=0.068
+[   276.6s]   [B=256] d_r=  16 d_c= 240 | recall=0.174 aic=0.100 f1=0.156 em=0.137
+[   295.5s]   [B=256] d_r=  32 d_c= 224 | recall=0.358 aic=0.150 f1=0.207 em=0.183
+[   315.2s]   [B=256] d_r=  48 d_c= 208 | recall=0.459 aic=0.237 f1=0.246 em=0.22
+[   334.2s]   [B=256] d_r=  64 d_c= 192 | recall=0.522 aic=0.300 f1=0.252 em=0.217
+[   354.7s]   [B=256] d_r=  80 d_c= 176 | recall=0.573 aic=0.317 f1=0.255 em=0.227
+[   374.7s]   [B=256] d_r=  96 d_c= 160 | recall=0.613 aic=0.350 f1=0.281 em=0.257
+[   395.3s]   [B=256] d_r= 112 d_c= 144 | recall=0.627 aic=0.357 f1=0.291 em=0.263
+[   415.8s]   [B=256] d_r= 128 d_c= 128 | recall=0.652 aic=0.373 f1=0.311 em=0.283
+[   435.4s]   [B=256] d_r= 144 d_c= 112 | recall=0.667 aic=0.390 f1=0.301 em=0.27
+[   455.8s]   [B=256] d_r= 160 d_c=  96 | recall=0.688 aic=0.400 f1=0.31 em=0.28
+[   476.1s]   [B=256] d_r= 176 d_c=  80 | recall=0.694 aic=0.383 f1=0.303 em=0.273
+[   496.0s]   [B=256] d_r= 192 d_c=  64 | recall=0.697 aic=0.373 f1=0.313 em=0.277
+[   516.6s]   [B=256] d_r= 224 d_c=  32 | recall=0.710 aic=0.347 f1=0.287 em=0.263
+[   557.1s]   [B=256] best=192:64 f1=0.313 | standalone_R=0.336 standalone_C=0.486 compounding_gap=0.023
+[   557.4s]   saved figure -> e9_real_qa.png
+[   557.4s] === done in 557.2s -> /kaggle/working/repo/outputs/e9d_2wiki_seed2 ===
