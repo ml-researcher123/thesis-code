@@ -178,3 +178,48 @@ huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/hotpot_qa@1908d
     raise HfUriError(uri=raw, msg=f"Repository id must be 'namespace/name', got '{repo_id}'.")
 huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/hotpot_qa@1908d6afbbead072334abe2965f91bd2709910ab/.huggingface.yaml'. Repository id must be 'namespace/name', got 'hotpot_qa'.
 
+[     0.0s] === run 'e9c_real_qa_3b' ===
+[     0.0s] host=23ce973346c1 python=3.12.13 config=/content/repo/configs/e9c_real_qa_3b.yaml
+[     0.1s] device=cuda seed=0
+[     8.5s] E9 real QA | embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-3B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[     9.5s] !! FAILED: Invalid HF URI 'hf://datasets/hotpot_qa@1908d6afbbead072334abe2965f91bd2709910ab/.huggingface.yaml'. Repository id must be 'namespace/name', got 'hotpot_qa'.
+[     9.5s] Traceback (most recent call last):
+  File "/content/repo/kaggle/run.py", line 85, in main
+    results, summary = run_fn(ctx)
+                       ^^^^^^^^^^^
+  File "/content/repo/src/experiments/e9_real_qa.py", line 117, in run
+    corpus, questions = load_hotpotqa(split, n_q, seed)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/repo/src/retrieval/hotpot.py", line 30, in load_hotpotqa
+    ds = _load_split(split)
+         ^^^^^^^^^^^^^^^^^^
+  File "/content/repo/src/retrieval/hotpot.py", line 21, in _load_split
+    return load_dataset("hotpot_qa", "distractor", trust_remote_code=True)[split]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/datasets/load.py", line 1392, in load_dataset
+    builder_instance = load_dataset_builder(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/datasets/load.py", line 1132, in load_dataset_builder
+    dataset_module = dataset_module_factory(
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/datasets/load.py", line 1031, in dataset_module_factory
+    raise e1 from None
+  File "/usr/local/lib/python3.12/dist-packages/datasets/load.py", line 1004, in dataset_module_factory
+    ).get_module()
+      ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/datasets/load.py", line 591, in get_module
+    standalone_yaml_path = cached_path(
+                           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/datasets/utils/file_utils.py", line 169, in cached_path
+    ).resolve_path(url_or_filename)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/huggingface_hub/hf_file_system.py", line 305, in resolve_path
+    parsed = parse_hf_uri(f"{constants.HF_PROTOCOL}{path}")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/huggingface_hub/utils/_hf_uris.py", line 317, in parse_hf_uri
+    return _parse_repo_body(location, type_, raw=raw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/huggingface_hub/utils/_hf_uris.py", line 615, in _parse_repo_body
+    raise HfUriError(uri=raw, msg=f"Repository id must be 'namespace/name', got '{repo_id}'.")
+huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/hotpot_qa@1908d6afbbead072334abe2965f91bd2709910ab/.huggingface.yaml'. Repository id must be 'namespace/name', got 'hotpot_qa'.
+
