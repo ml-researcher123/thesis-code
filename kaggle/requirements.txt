@@ -1,17 +1,18 @@
-# Core (preinstalled on Kaggle GPU image, listed for local/CPU reproduction)
-torch>=2.1
-numpy>=1.26
-scipy>=1.11
-scikit-learn>=1.3
-pandas>=2.0
-matplotlib>=3.7
-pyyaml>=6.0
+# Extra deps for the experiments. IMPORTANT: do NOT list torch (or other core libs Kaggle/Colab
+# preinstall) here. Kaggle and Colab ship a torch build matched to their exact GPU driver, and a
+# `pip install torch>=X` can UPGRADE it to a generic PyPI wheel that lacks kernels for the session's
+# GPU -> "CUDA error: no kernel image is available for the device" at the first GPU op. So we only
+# list the genuinely-extra packages here, and even those are installed lazily per-experiment via
+# ensure_deps() (which never pins torch), keeping the platform's GPU torch untouched.
 
-# Added as later stages land (E2 compression, E3+ pipeline). Uncomment on Kaggle
-# when the experiment that needs them is queued, to keep startup fast.
-# transformers>=4.44
-# sentence-transformers>=3.0
-# datasets>=2.20
-# accelerate>=0.33
-# peft>=0.12
-# faiss-cpu>=1.8
+# --- installed on demand by ensure_deps(); listed here for local/CPU reproduction only ---
+sentence-transformers>=3.0
+datasets>=2.20
+transformers>=4.44
+accelerate>=0.33
+peft>=0.12
+
+# Core numerics (torch, numpy, scipy, scikit-learn, pandas, matplotlib, pyyaml) are intentionally
+# NOT listed: they are preinstalled and GPU-matched on Kaggle/Colab. For a clean local/CPU env,
+# install them separately (e.g. `pip install numpy scipy scikit-learn pandas matplotlib pyyaml` and
+# a torch build appropriate to your machine from pytorch.org).
