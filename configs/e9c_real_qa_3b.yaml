@@ -1,0 +1,22 @@
+# E9c — reader-scale robustness for E9/E9b: same pipeline+grid, stronger reader (3B).
+# monotonically to d_r=96 (the edge of the tested grid) at both budgets, so the interior
+# allocation optimum (C3) was not yet bracketed on real QA. E9b widens d_r up to 224 to find
+# the turnover point (or honestly confirm none exists in-range), and adds 3 corpus-sample seeds
+# for real variance on the compounding-gap claim. Cheap: the pilot took 351s on a T4.
+name: e9c_real_qa_3b
+experiment: e9_real_qa
+seed: 0
+
+params:
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-3B-Instruct
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  split: validation
+  n_q: 300
+  seed_data: 0
+  top_k: 4
+  budget_tokens: 160
+  budgets: [128, 256]
+  splits: [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224]
+  max_new_tokens: 24
+  gen_batch: 16
