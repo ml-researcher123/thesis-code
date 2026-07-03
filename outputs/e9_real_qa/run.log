@@ -1,0 +1,19 @@
+[     0.0s] === run 'e9_real_qa' ===
+[     0.0s] host=0bed5a221380 python=3.12.13 config=/kaggle/working/repo/configs/e9_real_qa.yaml
+[     0.3s] device=cuda seed=0
+[    35.4s] E9 real QA | embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-1.5B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[    47.0s]   pooled corpus: 2983 paragraphs; 300 questions
+[    96.0s]   encoded 2983 paras, 12421 sentences, dim=1024
+[   111.9s]   reader loaded: Qwen/Qwen2.5-1.5B-Instruct (1.54B)
+[   130.7s]   [B=128] d_r=  32 d_c=  96 | recall=0.475 aic=0.340 f1=0.25 em=0.183
+[   148.8s]   [B=128] d_r=  48 d_c=  80 | recall=0.622 aic=0.420 f1=0.328 em=0.253
+[   167.7s]   [B=128] d_r=  64 d_c=  64 | recall=0.690 aic=0.453 f1=0.322 em=0.247
+[   187.8s]   [B=128] d_r=  96 d_c=  32 | recall=0.762 aic=0.443 f1=0.337 em=0.277
+[   230.1s]   [B=128] best=96:32 f1=0.337 | standalone_R=0.387 standalone_C=0.564 compounding_gap=0.050
+[   249.2s]   [B=256] d_r=  32 d_c= 224 | recall=0.475 aic=0.347 f1=0.275 em=0.213
+[   268.4s]   [B=256] d_r=  48 d_c= 208 | recall=0.622 aic=0.423 f1=0.319 em=0.247
+[   289.0s]   [B=256] d_r=  64 d_c= 192 | recall=0.690 aic=0.470 f1=0.347 em=0.267
+[   309.3s]   [B=256] d_r=  96 d_c= 160 | recall=0.762 aic=0.497 f1=0.391 em=0.31
+[   351.0s]   [B=256] best=96:160 f1=0.391 | standalone_R=0.379 standalone_C=0.585 compounding_gap=-0.011
+[   351.4s]   saved figure -> e9_real_qa.png
+[   351.4s] === done in 351.1s -> /kaggle/working/repo/outputs/e9_real_qa ===
