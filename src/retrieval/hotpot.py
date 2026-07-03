@@ -14,11 +14,21 @@ import numpy as np
 
 def _load_split(split: str):
     from datasets import load_dataset
-    try:
-        return load_dataset("hotpot_qa", "distractor")[split]
-    except Exception:
-        # older loader scripts need trust_remote_code
-        return load_dataset("hotpot_qa", "distractor", trust_remote_code=True)[split]
+    # Newer `datasets` releases require a canonical "namespace/name" repo id and reject the
+    # bare legacy name "hotpot_qa" outright (HfUriError), so try the namespaced id first and
+    # fall back to the legacy name (with trust_remote_code, for older `datasets` versions that
+    # still resolve it via a loading script) for environments pinned to an older library.
+    errors = []
+    for repo_id, kwargs in [
+        ("hotpotqa/hotpot_qa", {}),
+        ("hotpot_qa", {}),
+        ("hotpot_qa", {"trust_remote_code": True}),
+    ]:
+        try:
+            return load_dataset(repo_id, "distractor", **kwargs)[split]
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{repo_id} {kwargs}: {exc}")
+    raise RuntimeError("all HotpotQA load attempts failed:\n" + "\n".join(errors))
 
 
 def load_hotpotqa(split: str = "validation", n_q: int = 300, seed: int = 0):
