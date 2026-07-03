@@ -407,3 +407,18 @@ Recorded the pilot honestly as F19 (PILOT status) rather than waiting to report 
 Next: once E9b lands, finalize F19, fold the real EM/F1 numbers into the paper's compounding (§5)
 and allocation (§6) sections, and reassess whether the real-QA gap fully closes the comparison
 against the diagnostic paper's rigor bar.
+
+## 2026-07-01 (E9b seed0) — the interior allocation optimum DOES appear on real QA
+
+After a Kaggle kernel stall on the Qwen weight-load (user restarted; idempotency meant a clean
+re-pick-up), E9b seed0 (widened d_r grid to 224) landed and resolved the open question from the E9
+pilot. On real HotpotQA EM/F1 the allocation curve (F1 vs d_r at fixed B) is now clearly
+single-peaked with an INTERIOR maximum, not monotone: at B=256 F1 rises to 0.391 at d_r=96 and then
+declines steadily along a long tail to 0.326 at d_r=224 — pouring more budget into retrieval past
+the optimum HURTS, because it starves the compression stage. At B=128 the peak is d_r=80 (F1=0.345).
+So C3 (interior budget optimum) now holds on real answer quality, not just the synthetic E6.
+Compounding gap: +0.042 F1 at B=128 (best split below the weaker standalone), ~null (−0.011) at
+B=256 — the same shrink-with-budget pattern as E3/E6 and consistent with the measured rho~0 (E7).
+
+Holding the findings/paper finalization for the full 3-seed aggregate (seeds 1,2 running) to hit
+the >=3-seed rigor bar; seed0 alone already answers the qualitative question (optimum is interior).

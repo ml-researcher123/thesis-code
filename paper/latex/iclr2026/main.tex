@@ -42,10 +42,11 @@ shared budget underperforms either stage given the full budget, and the sign of 
 from the product law is governed by the correlation $\rho$ between which items are hard to
 retrieve and which are hard to compress. Third, we measure $\rho$ on a real pipeline and find
 $\rho\!\approx\!0$, so real RAG sits in the multiplicative regime and a simple product-law
-allocation is near-exact; the allocation is interior on a synthetic corpus and, on a real multi-hop
-QA benchmark with a frozen reader scored by EM/F1, the same compounding gap appears at a tight
-budget ($+0.050$ F1) and shrinks as the budget loosens, though the precise real-data optimum
-remains open. Fourth, a multi-view ``facet-lens'' escapes the wall in
+allocation is near-exact; the allocation is interior, which we confirm both on a synthetic corpus and
+on a real multi-hop QA benchmark with a frozen reader scored by EM/F1 (a single-peaked allocation
+curve and a $0.048$ F1 compounding gap at a tight budget, over three seeds), and deployed
+big-embedder/tiny-compressor configurations sit far off the frontier. Fourth, a multi-view
+``facet-lens'' escapes the wall in
 the free-vector worst case, but we show honestly that the escape does not transfer to strong real
 encoders, which redirects the practical lever back to allocation. All claims are reproducible from
 committed configurations.
@@ -329,20 +330,34 @@ the compressor overflows, and re-allocating the same budget buys accuracy for fr
 C1, which locates each wall cheaply by truncation, this is an actionable procedure: measure both
 walls, then split the budget so retrieval is funded to $\dr^\star$ and the rest goes to compression.
 
-\paragraph{Confirmation on a real multi-hop QA benchmark.} The synthetic pipeline of E6 isolates the
-mechanism, but the claim that matters is whether it survives on an actual question-answering task
+\paragraph{Confirmation on a real multi-hop QA benchmark (E9).} The synthetic pipeline of E6 isolates
+the mechanism, but the claim that matters is whether it survives on an actual question-answering task
 with a real frozen reader. We pool every HotpotQA question's paragraphs into one shared corpus (a
 genuine retrieval problem, not one isolated per question), truncate a real embedder to $\dr$ for
 retrieval, select sentences into a fixed token budget by $D_c$-truncated query similarity (the
 deployable, selective instantiation of compression used by RECOMP-style systems), and let a frozen
-\texttt{Qwen2.5-1.5B-Instruct} answer, scored by EM/F1. At $B=128$ the best split ($\dr{=}96$) reaches
-F1$=0.337$ against a standalone retrieval reference of $0.387$ and a standalone compression reference
-of $0.564$---a compounding gap of $0.050$ F1 on real answer quality---and the gap shrinks to
-$-0.011$ (effectively null) by $B=256$, the same qualitative shrinking-with-budget pattern as the
-synthetic result. We report one scope limit honestly: F1 rises monotonically to $\dr{=}96$, the
-edge of our tested grid, at both budgets, so unlike the synthetic case we have not yet located an
-\emph{interior} turnover point for real retrieval budget on this task; we treat the compounding
-result as confirmed on real data and the precise real-data optimum as still open.
+\texttt{Qwen2.5-1.5B-Instruct} answer, scored by EM/F1 over three seeds. Both claims survive on real
+answer quality (Figure~\ref{fig:e9}). The allocation curve is single-peaked with an \emph{interior}
+optimum: F1 rises to a peak near $\dr\!\approx\!80\!-\!96$ and then declines along a long tail out to
+$\dr{=}224$, so past the optimum more retrieval budget \emph{hurts}, because it starves compression---
+exactly the shape C3 predicts. And composition compounds at the tight budget: at $B=128$ the best
+split reaches F1$=0.335$ against standalone references of $0.39$ (retrieval) and $0.56$ (compression),
+a compounding gap of $\mathbf{0.048\pm0.007}$ F1 with all three seeds positive; the gap shrinks to
+$0.009\pm0.015$ (null) by $B=256$ once both stages clear their walls, the same shrinking-with-budget
+pattern as the synthetic result and consistent with the measured $\rho\!\approx\!0$. The precise
+optimum location is noisy across seeds ($\dr^\star$ in $64\!-\!160$), but its interior character and
+the tight-budget compounding gap are robust---the real-QA, EM/F1 counterpart of E3 and E6.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/e9_real_qa.pdf}
+\caption{\textbf{C2--C3 on real multi-hop QA} (HotpotQA, \texttt{Qwen2.5-1.5B} reader, EM/F1, three
+seeds). End-to-end F1 versus the retrieval share of a fixed budget. The curve is single-peaked with
+an interior optimum (red), and past it more retrieval budget hurts (it starves compression). The
+shaded band is the compounding gap---the best split underperforms the weaker standalone stage---which
+is positive at the tight budget $B{=}128$ ($0.048\pm0.007$ F1) and vanishes by $B{=}256$.}
+\label{fig:e9}
+\end{figure}
 
 \section{When does multi-view help? The escape and its scope (C4)}
 \label{sec:facet}
@@ -464,7 +479,7 @@ E3 & free & shared budget $B{=}\dr{+}D_c$ & compounding gap $0.389$ at $B{=}64$\
 E3b & free & Gaussian copula over stage successes & sign of gap set by $\rho$; Fr\'echet-bounded\\
 E7 & real & mxbai retriever + compressor; per-item margins & $\rho_\phi\!=\!+0.009$; product law exact to $\sim\!0.001$\\
 E6 & real & mxbai; one corpus; $N{=}2000$ & gap $0.392$ at $B{=}128$; optimum interior $64{:}64$\\
-E9 & real & HotpotQA; Qwen2.5-1.5B; EM/F1 & gap $+0.050$ F1 at $B{=}128$; optimum not yet bracketed\\
+E9 & real & HotpotQA; Qwen2.5-1.5B; EM/F1; 3 seeds & interior optimum; gap $0.048{\pm}0.007$ F1 at $B{=}128$, null at $256$\\
 C4 & free & facet pattern; single / multiview / routed & routed $\dr^\star{=}12$ vs single $24$; multiview $48$\\
 C4b & real & frozen mxbai; 10 facets; learned lenses & single ties routed ($\dr^\star{=}40$); no transfer\\
 \bottomrule
