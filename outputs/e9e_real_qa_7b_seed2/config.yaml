@@ -1,0 +1,33 @@
+name: e9e_real_qa_7b_seed2
+experiment: e9_real_qa
+seed: 2
+params:
+  dataset: hotpotqa
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-7B-Instruct
+  reader_4bit: true
+  query_prompt: 'Represent this sentence for searching relevant passages: '
+  split: validation
+  n_q: 300
+  seed_data: 2
+  top_k: 4
+  budget_tokens: 160
+  budgets:
+  - 128
+  - 256
+  splits:
+  - 16
+  - 32
+  - 48
+  - 64
+  - 80
+  - 96
+  - 112
+  - 128
+  - 144
+  - 160
+  - 176
+  - 192
+  - 224
+  max_new_tokens: 24
+  gen_batch: 16
