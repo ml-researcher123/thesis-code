@@ -1,0 +1,32 @@
+[     0.0s] === run 'e9e_real_qa_7b_seed0' ===
+[     0.0s] host=96694960fd4e python=3.12.13 config=/kaggle/working/repo/configs/e9e_real_qa_7b_seed0.yaml
+[     0.3s] device=cuda seed=0
+[    27.2s] E9 real QA | dataset=hotpotqa embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-7B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[    36.3s]   pooled corpus: 2983 paragraphs; 300 questions
+[    85.2s]   encoded 2983 paras, 12421 sentences, dim=1024
+[    86.7s] installing missing dep 'bitsandbytes' (import 'bitsandbytes')
+[   191.0s]   reader loaded: Qwen/Qwen2.5-7B-Instruct (4bit=True)
+[   373.1s]   [B=128] d_r=  16 d_c= 112 | recall=0.277 aic=0.220 f1=0.266 em=0.207
+[   561.8s]   [B=128] d_r=  32 d_c=  96 | recall=0.475 aic=0.340 f1=0.349 em=0.253
+[   734.7s]   [B=128] d_r=  48 d_c=  80 | recall=0.622 aic=0.420 f1=0.398 em=0.293
+[   913.0s]   [B=128] d_r=  64 d_c=  64 | recall=0.690 aic=0.453 f1=0.397 em=0.3
+[  1089.5s]   [B=128] d_r=  80 d_c=  48 | recall=0.733 aic=0.460 f1=0.389 em=0.297
+[  1274.0s]   [B=128] d_r=  96 d_c=  32 | recall=0.762 aic=0.443 f1=0.385 em=0.313
+[  1448.8s]   [B=128] d_r= 112 d_c=  16 | recall=0.760 aic=0.423 f1=0.412 em=0.323
+[  1783.2s]   [B=128] best=112:16 f1=0.412 | standalone_R=0.466 standalone_C=0.691 compounding_gap=0.054
+[  1958.0s]   [B=256] d_r=  16 d_c= 240 | recall=0.277 aic=0.227 f1=0.263 em=0.203
+[  2147.2s]   [B=256] d_r=  32 d_c= 224 | recall=0.475 aic=0.347 f1=0.352 em=0.26
+[  2325.5s]   [B=256] d_r=  48 d_c= 208 | recall=0.622 aic=0.423 f1=0.401 em=0.3
+[  2493.8s]   [B=256] d_r=  64 d_c= 192 | recall=0.690 aic=0.470 f1=0.42 em=0.323
+[  2651.5s]   [B=256] d_r=  80 d_c= 176 | recall=0.733 aic=0.507 f1=0.438 em=0.333
+[  2819.6s]   [B=256] d_r=  96 d_c= 160 | recall=0.762 aic=0.497 f1=0.449 em=0.347
+[  3001.3s]   [B=256] d_r= 112 d_c= 144 | recall=0.760 aic=0.480 f1=0.443 em=0.34
+[  3160.5s]   [B=256] d_r= 128 d_c= 128 | recall=0.785 aic=0.493 f1=0.454 em=0.343
+[  3349.4s]   [B=256] d_r= 144 d_c= 112 | recall=0.797 aic=0.490 f1=0.444 em=0.327
+[  3513.5s]   [B=256] d_r= 160 d_c=  96 | recall=0.805 aic=0.523 f1=0.447 em=0.327
+[  3673.7s]   [B=256] d_r= 176 d_c=  80 | recall=0.807 aic=0.530 f1=0.45 em=0.347
+[  3845.1s]   [B=256] d_r= 192 d_c=  64 | recall=0.805 aic=0.523 f1=0.443 em=0.337
+[  4024.6s]   [B=256] d_r= 224 d_c=  32 | recall=0.828 aic=0.483 f1=0.427 em=0.347
+[  4337.8s]   [B=256] best=128:128 f1=0.454 | standalone_R=0.509 standalone_C=0.706 compounding_gap=0.054
+[  4338.3s]   saved figure -> e9_real_qa.png
+[  4338.4s] === done in 4338.1s -> /kaggle/working/repo/outputs/e9e_real_qa_7b_seed0 ===
