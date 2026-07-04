@@ -347,12 +347,13 @@ $0.009\pm0.015$ (null) by $B=256$ once both stages clear their walls, the same s
 pattern as the synthetic result and consistent with the measured $\rho\!\approx\!0$. The precise
 optimum location is noisy across seeds ($\dr^\star$ in $64\!-\!160$), but its interior character and
 the tight-budget compounding gap are robust---the real-QA, EM/F1 counterpart of E3 and E6. The gap
-is also \emph{reader-scale robust}: repeating with a stronger \texttt{Qwen2.5-3B} reader (three
-seeds) the gap persists and if anything grows, to $0.058\pm0.005$ F1 at $B=128$ and $0.036\pm0.018$
-at $B=256$, with the interior optimum at $\dr{=}80$ in all three seeds. This is the signature of an
-\emph{information} bottleneck rather than a reasoning one---a more capable reader extracts more from
-good context, so the penalty for the evidence the two stages discard is more visible, not less,
-unlike a context-cleanup heuristic whose benefit a strong reader absorbs. It is also
+is also \emph{reader-scale robust}: across a $5\times$ range of reader size (\texttt{Qwen2.5} at
+1.5B, 3B, and 7B, three seeds each) the tight-budget ($B{=}128$) gap stays flat at $0.048/0.058/0.058$
+F1 and the interior optimum holds at every scale---it does not vanish or reverse with reader
+capability. This is the signature of an \emph{information} bottleneck rather than a reasoning one---a
+more capable reader extracts more from good context, so the penalty for the evidence the two stages
+discard persists (and at the looser budget grows: $0.009{\to}0.036{\to}0.027$), unlike a
+context-cleanup heuristic whose benefit a stronger reader absorbs. It is also
 dataset-general: on a second multi-hop benchmark (2WikiMultihopQA, three seeds) the tight-budget
 gap is $0.048\pm0.014$ F1 with the same single-peaked interior optimum.
 
@@ -488,7 +489,7 @@ E3b & free & Gaussian copula over stage successes & sign of gap set by $\rho$; F
 E7 & real & mxbai retriever + compressor; per-item margins & $\rho_\phi\!=\!+0.009$; product law exact to $\sim\!0.001$\\
 E6 & real & mxbai; one corpus; $N{=}2000$ & gap $0.392$ at $B{=}128$; optimum interior $64{:}64$\\
 E9 & real & HotpotQA; Qwen2.5-1.5B; EM/F1; 3 seeds & interior optimum; gap $0.048{\pm}0.007$ F1 at $B{=}128$, null at $256$\\
-E9c & real & HotpotQA; Qwen2.5-\textbf{3B}; 3 seeds & reader-robust: gap $0.058{\pm}0.005$ at $B{=}128$ (grows vs 1.5B)\\
+E9c/E9e & real & HotpotQA; Qwen2.5-\textbf{3B/7B}; 3 seeds & reader-robust: $B{=}128$ gap $0.058/0.058$ (flat over 1.5B/3B/7B, no reversal)\\
 E9d & real & \textbf{2Wiki}; Qwen2.5-1.5B; 3 seeds & cross-dataset: gap $0.048{\pm}0.014$ at $B{=}128$; same interior optimum\\
 C4 & free & facet pattern; single / multiview / routed & routed $\dr^\star{=}12$ vs single $24$; multiview $48$\\
 C4b & real & frozen mxbai; 10 facets; learned lenses & single ties routed ($\dr^\star{=}40$); no transfer\\

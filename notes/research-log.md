@@ -475,3 +475,18 @@ a compact cross-dataset clause + 2 appendix rows (E9c/E9d) to the paper. Main te
 The real-QA program (E9/E9b/E9c/E9d) is now comprehensively validated and, I think, closes the
 gap vs the diagnostic paper's rigor bar: real benchmarks, real readers, EM/F1, multi-seed,
 cross-dataset, cross-reader-scale, with the mechanism (information vs reasoning bottleneck) tested.
+
+## 2026-07-04 (E9e 7B) — reader-scale trend complete: 1.5B→3B→7B, gap flat, no reversal
+
+Added the third reader-scale point (Qwen2.5-7B in 4-bit NF4, since 7B fp16 ~15GB won't fit fp16 on
+a single 16GB GPU; the gap is a same-reader relative quantity so quantization only shifts absolute
+F1). Canary seed0 confirmed it fits + the gap persists; ran all 3 seeds. Full reader-scale trend,
+compounding gap at the tight budget B=128 (3 seeds each): 1.5B +0.048±0.007, 3B +0.058±0.005, 7B
++0.058±0.017 — FLAT across a 5× reader-size range, no reversal, interior optimum at every scale.
+This is the clean information-bottleneck signature and a meaningful contrast with the diagnostic
+paper (whose packing edge REVERSES with reader scale). At B=256 the gap grows with scale
+(+0.009→+0.036→+0.027): a stronger reader makes the discarded-evidence penalty more visible. 7B's
+absolute F1 is highest (0.40–0.45), confirming the earlier 3B<1.5B absolute dip was a
+span-F1-vs-verbosity artifact (recall identical at every d_r). Finalized F20, paper §6 (3-point
+trend) + appendix. Real-QA validation is now: 2 datasets × 3 reader scales, 3 seeds each. This
+comprehensively closes the reader-scale question; not doing 14B/MuSiQue (diminishing returns).
