@@ -1,0 +1,24 @@
+# E9e — third reader-scale point (Qwen2.5-7B, 4-bit NF4) to make the reader-scale trend a proper
+# 3-point line (1.5B -> 3B -> 7B). 7B is too big for fp16 on a single 16GB GPU (~15GB), so we load
+# it in 4-bit (~5GB); the compounding gap is a same-reader relative quantity, so quantization only
+# shifts absolute F1, not the gap or the allocation-curve shape. Seed0 first as a canary (confirms
+# 4-bit 7B fits + the gap persists) before queuing seeds 1,2. Same E9b/E9c pipeline and grid.
+name: e9e_real_qa_7b_seed0
+experiment: e9_real_qa
+seed: 0
+
+params:
+  dataset: hotpotqa
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-7B-Instruct
+  reader_4bit: true
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  split: validation
+  n_q: 300
+  seed_data: 0
+  top_k: 4
+  budget_tokens: 160
+  budgets: [128, 256]
+  splits: [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224]
+  max_new_tokens: 24
+  gen_batch: 16

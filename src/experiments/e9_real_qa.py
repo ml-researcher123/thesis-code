@@ -53,7 +53,7 @@ def _cos_topk(q_full, d_full, d, k):
 class Reader:
     """Frozen decoder-only LLM used only for generation (no training)."""
 
-    def __init__(self, model_name, device, log):
+    def __init__(self, model_name, device, log, load_in_4bit=False):
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
         self.torch = torch
@@ -62,10 +62,24 @@ class Reader:
             self.tok.pad_token = self.tok.eos_token
         self.tok.padding_side = "left"
         dtype = torch.float16 if device.type == "cuda" else torch.float32
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
-        self.model.to(device).eval()
+        # 4-bit NF4 for readers too large to fit in fp16 on a single 16GB GPU (e.g. 7B: ~15GB
+        # fp16 vs ~5GB in 4-bit). The compounding gap is a same-reader relative quantity, so
+        # quantization affects only absolute F1, not the gap or the allocation-curve shape.
+        if load_in_4bit and device.type == "cuda":
+            from ..common import ensure_deps
+            ensure_deps({"bitsandbytes": "bitsandbytes", "accelerate": "accelerate"}, log)
+            from transformers import BitsAndBytesConfig
+            qcfg = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                      bnb_4bit_compute_dtype=torch.float16,
+                                      bnb_4bit_use_double_quant=True)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, quantization_config=qcfg, device_map={"": device.index or 0})
+            self.model.eval()
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
+            self.model.to(device).eval()
         self.device = device
-        log(f"  reader loaded: {model_name} ({sum(p.numel() for p in self.model.parameters())/1e9:.2f}B)")
+        log(f"  reader loaded: {model_name} (4bit={load_in_4bit and device.type=='cuda'})")
 
     def n_tokens(self, text):
         return len(self.tok(text, add_special_tokens=False)["input_ids"])
@@ -101,6 +115,7 @@ def run(ctx: RunContext):
 
     embedder_name = p.get("embedder", "mixedbread-ai/mxbai-embed-large-v1")
     reader_name = p.get("reader", "Qwen/Qwen2.5-1.5B-Instruct")
+    reader_4bit = p.get("reader_4bit", False)      # NF4 for readers too big for fp16 on one GPU
     dataset = p.get("dataset", "hotpotqa")          # "hotpotqa" or "2wiki"
     split = p.get("split", "validation")
     n_q = p.get("n_q", 300)
@@ -143,7 +158,7 @@ def run(ctx: RunContext):
 
     reader = None
     try:
-        reader = Reader(reader_name, ctx.device, log)
+        reader = Reader(reader_name, ctx.device, log, load_in_4bit=reader_4bit)
     except Exception as exc:  # noqa: BLE001
         log(f"  !! reader failed to load ({exc}); falling back to answer-in-context only")
 
@@ -271,7 +286,7 @@ def run(ctx: RunContext):
 
     results = {
         "experiment": "e9_real_qa", "config_params": p, "embedder": embedder_name,
-        "reader": reader_name, "reader_enabled": reader is not None,
+        "reader": reader_name, "reader_4bit": reader_4bit, "reader_enabled": reader is not None,
         "n_questions": len(questions), "corpus_paragraphs": len(pids),
         "budget_tokens": budget_tokens, "per_budget": {str(B): per_budget[B] for B in per_budget},
         "figure": os.path.basename(fig),
