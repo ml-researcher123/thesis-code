@@ -31,6 +31,25 @@ plus the evidence pointer. A claim is only `SUPPORTED` with ≥3 seeds + varianc
 | F21 | The real-QA compounding + interior optimum are **cross-dataset general**: they replicate on a second multi-hop benchmark (2WikiMultihopQA), not just HotpotQA. | SUPPORTED (3 seeds) | E9d (`outputs/e9d_2wiki_seed{0,1,2}`, 2Wiki, Qwen2.5-1.5B): B=128 gap **+0.048±0.014 F1** (matches HotpotQA's +0.048±0.007 exactly), interior optimum single-peaked (peak d_r≈96, declines to endpoint), null gap at B=256. Real-QA validation now spans **2 datasets × 2 reader scales, 3 seeds each**, all with a ~+0.05 F1 tight-budget gap and interior optimum. |
 | F19 | Compounding (C2) **and** the interior allocation optimum (C3) hold **end-to-end on a real multi-hop QA benchmark with a real reader and EM/F1**, not just synthetic corpora. | SUPPORTED (3 seeds) | E9b (`outputs/e9b_real_qa_seed{0,1,2}`, HotpotQA, 300 q, Qwen2.5-1.5B, d_r grid to 224): the allocation curve F1(d_r) is **single-peaked with an interior optimum** — rises to a peak near d_r≈80–96 then declines to d_r=224 (B=256: 0.367→0.335), so past the optimum more retrieval budget hurts (starves compression). Compounding gap **+0.048±0.007 F1 at B=128** (all 3 seeds positive: 0.042/0.044/0.059), shrinking to +0.009±0.015 (null) at B=256 — same shrink-with-budget pattern as E3/E6, consistent with measured ρ≈0 (E7). Optimum *location* is noisy across seeds (d_r*∈64–160); its interior *character* and the tight-budget gap are robust. Pilot (`outputs/e9_real_qa`, 1 seed, narrow grid) showed the compounding gap but not the turnover; E9b's wider grid located it. |
 
+| F22 | The **compression** wall is not embedder-specific either: it replicates on a 2nd embedder family (bge-large), closing the asymmetry with the 3-embedder retrieval wall. | SUPPORTED | E5c (`outputs/e5c_bge_compression_shape`, bge-large-en-v1.5): critical code size D_c* grows with content n_f (n_f=4 saturates by D_c≈16, n_f=16 needs D_c≈32), same shape as mxbai (E5b, D_c*≈2·n_f); F6 thin-slot-only scope also holds (best m=1 under real-encoder truncation). |
+
+## Reviewer-proofing (2026-07-05)
+Pass over the paper to pre-empt likely ICLR reviewer flags, at a "reasonable" bar (not chasing an
+unobjectionable paper):
+- **Real soft-compressor objection** (probe, not xRAG/GIST/ICAE): a full xRAG run needs two 7B
+  models (SFR retriever + Mistral) + their custom modality-fusion code — too heavy/fragile for the
+  loop, and training our own sits at chance (F11). Closed instead by (a) connecting the compression
+  wall to the **published xRAG-overflow** result (Belikova et al. detect overflow in xRAG's token =
+  our wall in a deployed compressor), (b) framing the probe as an *upper bound*, (c) crisp
+  selective-vs-soft distinction (E9's real-QA already uses a real deployable selective compressor).
+- **Compression-wall generality asymmetry** → E5c (2nd embedder, bge) — F22.
+- **"No theorem"** → Proposition 1 (Compositional capacity): c_eff = |R_r ∩ R_c| ≤ min, proof
+  immediate, content empirical (how far below min = the compounding gap). Honest framing.
+- **C3 is a curve, not an intervention** → explicit deployed-corner→optimum re-allocation on real
+  QA: +0.032 F1 (1.5B) / +0.035 F1 (7B) at B=256, same token cost.
+- C4-as-analysis and ρ≈0 framing were already adequate (spine is C1+C2+C3; ρ≈0 → product law is the
+  right predictor), left as-is to save page budget.
+
 ## Open threads / risks
 - F3 (the `~d/n_d` sub-critical law) is **refuted** (R²=0.18); we no longer claim a clean
   closed-form for the transition. The load-bearing scaling claim is F2 (d* grows with n_d),

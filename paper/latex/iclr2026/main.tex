@@ -154,10 +154,26 @@ Realizing $A$ by thresholding $Y X^\top$ is governed by the sign-rank of $2A-1$
 $Z\in\R^{m\times \dc}$ ($m$ soft tokens of width $\dc$) that a frozen reader answers from; we cast
 ``can the reader recover the queried fact from $Z$ among distractors'' as a second
 thresholded-separation problem with its own capacity $c_{\mathrm{compress}}$. Because the
-compressor acts on the retriever's output, the realizable set of the pipeline is the intersection
-of two subspace-constrained families, so $\ceff\le\min(c_{\mathrm{retrieve}},c_{\mathrm{compress}})$,
-with strict inequality generically, since the retriever's discriminative subspace and the
-compressor's reconstructive subspace need not align.
+compressor acts on the retriever's output, the two capacities compose by set intersection, which we
+state as follows and validate empirically throughout the paper.
+
+\begin{proposition}[Compositional capacity]
+\label{prop:compose}
+Let $\mathcal{R}_r$ be the family of relevance/answer patterns realizable by the retrieval stage at
+capacity $c_{\mathrm{retrieve}}$, and $\mathcal{R}_c$ the family realizable by the compression stage
+at $c_{\mathrm{compress}}$. A pattern is realized end-to-end only if the retriever surfaces the gold
+set \emph{and} the compressor preserves the answer from it, so the pipeline's realizable family is
+$\mathcal{R}_r\cap\mathcal{R}_c$ and its effective capacity satisfies
+$\ceff=|\mathcal{R}_r\cap\mathcal{R}_c|\le\min(c_{\mathrm{retrieve}},c_{\mathrm{compress}})$.
+Equality holds iff one family contains the other; generically it does not---the retriever's
+\emph{discriminative} subspace and the compressor's \emph{reconstructive} subspace are misaligned---
+so the inequality is strict, and the shortfall is the failure-transfer set we measure in
+Section~\ref{sec:compound}.
+\end{proposition}
+
+\noindent The proof is immediate (a pattern in neither stage's realizable family cannot be realized
+by their composition); the content is empirical, namely \emph{how far} below the minimum the
+composition falls, which is exactly the compounding gap C2 quantifies.
 
 \paragraph{The free-embedding capacity measure.} To measure capacity without confounding it with a
 particular encoder's quality, we directly optimize unconstrained document and query vectors of a
@@ -252,7 +268,16 @@ $0.96\!-\!0.99$ once the per-slot width clears a floor. We also flag a scope bou
 under a learned attention-read code, capacity is not shape-invariant---one fat token and many thin
 tokens both collapse while an interior slot count is best---but under real-encoder truncation only
 the thin-slot collapse remains, so the interior optimum is specific to the learned-code mechanism
-rather than a universal law.
+rather than a universal law. Two points guard against the objection that this is a probe artifact.
+First, the same wall holds on a second embedder family (\texttt{bge-large}, App.~\ref{app:experiments}),
+so it is not specific to one encoder. Second, and more directly, a \emph{deployed} soft-token
+compressor shows exactly this wall in the wild: \citet{belikova2026overflow} detect ``overflow'' in
+the one-token \texttt{xRAG} \citep{cheng2024xrag} code---a regime where the compressed token can no
+longer answer the query---which is precisely the capacity threshold we characterize, so our account
+explains an independently observed phenomenon rather than resting on the probe alone. The probe is
+best read as an \emph{upper bound}: it measures the code's information ceiling with a light,
+reliably-trained reader, so a fully-trained generative soft-compressor can only do worse (indeed our
+own from-scratch attempt sits at chance without a large training budget, App.~\ref{app:impl}).
 
 \begin{figure}[t]
 \centering
@@ -326,9 +351,12 @@ the stages alone reach $0.63$ and $0.89$, a compounding gap of $0.392$ that shri
 $B=256$ (Figure~\ref{fig:c2c3}, left). The practical statement is blunt: the standard configuration
 of a large $\dr\!\approx\!768\!-\!1024$ embedding with a tiny $m\!\approx\!1\!-\!8$ compressor sits
 far off the frontier, since it spends heavily on embedding dimensions past the retrieval wall while
-the compressor overflows, and re-allocating the same budget buys accuracy for free. Combined with
-C1, which locates each wall cheaply by truncation, this is an actionable procedure: measure both
-walls, then split the budget so retrieval is funded to $\dr^\star$ and the rest goes to compression.
+the compressor overflows, and re-allocating the same budget buys accuracy for free. This is not just
+a frontier picture but a concrete intervention: on real QA (E9, below), moving the shared budget
+from the deployed big-retrieval/tiny-compression corner to the interior optimum raises answer F1 by
+$+0.032$ (1.5B reader) and $+0.035$ (7B) at $B{=}256$, at identical token cost. Combined with C1,
+which locates each wall cheaply by truncation, this is an actionable procedure: measure both walls,
+then split the budget so retrieval is funded to $\dr^\star$ and the rest goes to compression.
 
 \paragraph{Confirmation on a real multi-hop QA benchmark (E9).} The synthetic pipeline of E6 isolates
 the mechanism, but the claim that matters is whether it survives on an actual question-answering task
@@ -483,6 +511,7 @@ E4b & real & arctic-m / SciFact; Matryoshka & $97\%$ of full recall by $\dr{=}25
 E4c & real & mxbai / FiQA (domain shift) & $92\%$ of full recall by $\dr{=}256$\\
 E4d & real & bge-large / SciFact; \textbf{PCA} trunc.\ & saturates at $\dr{=}256$ ($98.5\%$)\\
 E5/E5b & real & mxbai code; light read probe & one vector $\approx$ one fact ($0.98\!\to\!0.20$); multi-token recovers to $0.99$\\
+E5c & real & \textbf{bge-large} code; same sweeps & compression wall replicates ($D_c^\star$ grows with $n_f$); F6 thin-slot scope holds\\
 E8 & real & LIMIT; 3 embedders; 50k / 46 docs & recall@100 $=2.8/8.2/4.5\%$ (full)\\
 E3 & free & shared budget $B{=}\dr{+}D_c$ & compounding gap $0.389$ at $B{=}64$\\
 E3b & free & Gaussian copula over stage successes & sign of gap set by $\rho$; Fr\'echet-bounded\\

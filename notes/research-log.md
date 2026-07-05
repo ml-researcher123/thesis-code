@@ -490,3 +490,29 @@ absolute F1 is highest (0.40–0.45), confirming the earlier 3B<1.5B absolute di
 span-F1-vs-verbosity artifact (recall identical at every d_r). Finalized F20, paper §6 (3-point
 trend) + appendix. Real-QA validation is now: 2 datasets × 3 reader scales, 3 seeds each. This
 comprehensively closes the reader-scale question; not doing 14B/MuSiQue (diminishing returns).
+
+## 2026-07-05 — reviewer-proofing pass (a few likely ICLR flags, addressed at a reasonable bar)
+
+User asked me to find the points a reviewer might flag and work the high-value ones (the xRAG
+benchmark being one), while explicitly not chasing an unobjectionable paper. Went through it and
+hit the ones with real leverage:
+
+The biggest was "the compression side is a probe, not a real soft-compressor like xRAG/GIST/ICAE."
+I looked hard at actually running xRAG, but xRAG-7b needs TWO 7B models (SFR-Embedding-Mistral as
+the retriever + Mistral-7B) plus their custom modality-fusion code vendored in, which is too heavy
+and fragile for the loop, and we already know training our own soft-compressor sits at chance (F11).
+So the honest, stronger move: the overflow paper we already cite (Belikova et al.) EMPIRICALLY
+detected overflow in xRAG's one-token code — that IS our compression wall showing up in a deployed
+soft-compressor — so I connected our account to it explicitly, framed the probe as an upper bound
+(a real generative compressor can only do worse), and made crisp that E9's real-QA already uses a
+real deployable *selective* compressor. That closes the objection without a shaky re-run.
+
+Also: E5c re-ran the compression wall on a 2nd embedder (bge-large) — it replicates cleanly (D_c*
+grows with n_f), closing the asymmetry where retrieval had 3 embedders and compression had 1 (F22).
+Added Proposition 1 (Compositional capacity) to give C1 a real formal statement — c_eff = |R_r ∩ R_c|
+≤ min, proof immediate, and i'm careful to say the *content* is empirical (how far below the min the
+composition falls = the compounding gap), which is the honest version rather than pretending we have
+a hard closed-form. And turned C3 from a curve into a concrete intervention: on real QA, moving the
+shared budget from the deployed big-retrieval/tiny-compression corner to the interior optimum buys
++0.032 F1 (1.5B) / +0.035 (7B) at the same token cost. Left the C4-as-analysis and ρ≈0 framing alone
+since they were already fine and page budget is tight. Paper still compiles at 8pp main text.
