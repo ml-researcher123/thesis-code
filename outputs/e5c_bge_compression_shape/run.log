@@ -1,0 +1,36 @@
+[     0.0s] === run 'e5c_bge_compression_shape' ===
+[     0.0s] host=38eff6f65491 python=3.12.13 config=/kaggle/working/repo/configs/e5c_bge_compression_shape.yaml
+[     0.3s] device=cuda seed=0
+[    37.3s] E5b multi-token compression | model=BAAI/bge-large-en-v1.5 V=8 device=cuda
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c=  2 D_c=   8 | acc=0.215
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c=  4 D_c=  16 | acc=0.331
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c=  8 D_c=  32 | acc=0.596
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c= 16 D_c=  64 | acc=0.837
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c= 32 D_c= 128 | acc=0.919
+[    66.8s]   [WALL] n_f=  4 m=n_f d_c= 64 D_c= 256 | acc=0.944
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c=  2 D_c=  16 | acc=0.185
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c=  4 D_c=  32 | acc=0.280
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c=  8 D_c=  64 | acc=0.501
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c= 16 D_c= 128 | acc=0.849
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c= 32 D_c= 256 | acc=0.950
+[    90.8s]   [WALL] n_f=  8 m=n_f d_c= 64 D_c= 512 | acc=0.974
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c=  2 D_c=  32 | acc=0.161
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c=  4 D_c=  64 | acc=0.215
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c=  8 D_c= 128 | acc=0.373
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c= 16 D_c= 256 | acc=0.752
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c= 32 D_c= 512 | acc=0.946
+[   124.7s]   [WALL] n_f= 16 m=n_f d_c= 64 D_c=1024 | acc=0.981
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c=  2 D_c=  64 | acc=0.149
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c=  4 D_c= 128 | acc=0.181
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c=  8 D_c= 256 | acc=0.260
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c= 16 D_c= 512 | acc=0.572
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c= 32 D_c=1024 | acc=0.859
+[   180.2s]   [WALL] n_f= 32 m=n_f d_c= 64 D_c=2048 | acc=0.971
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m=  1 (d_c= 64) | acc=0.208
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m=  2 (d_c= 32) | acc=0.204
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m=  4 (d_c= 16) | acc=0.203
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m=  8 (d_c=  8) | acc=0.189
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m= 16 (d_c=  4) | acc=0.171
+[   235.2s]   [SHAPE] n_f=32 D_c=64 m= 32 (d_c=  2) | acc=0.149
+[   235.9s]   saved figures -> e5b_wall.png, e5b_shape_f6.png
+[   235.9s] === done in 235.7s -> /kaggle/working/repo/outputs/e5c_bge_compression_shape ===
