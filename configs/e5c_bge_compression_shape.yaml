@@ -1,0 +1,23 @@
+# E5c — Compression-wall generality: the E5b real-encoder compression wall on a SECOND embedder
+# family (bge-large-en-v1.5, vs E5b's mxbai). Closes the asymmetry where the retrieval wall has 3
+# embedders (E4/E4b/E4d) but the compression wall had only one. Same pipeline/sweeps as E5b.
+name: e5c_bge_compression_shape
+experiment: e5b_real_compression_shape
+seed: 0
+verbose: false
+
+params:
+  model: BAAI/bge-large-en-v1.5
+  P_train: 256
+  P_eval: 128
+  steps: 500
+  lr: 0.002
+  seeds: [0, 1]
+  key_trunc: 64
+
+  wall_n_f: [4, 8, 16, 32]
+  wall_d_c: [2, 4, 8, 16, 32, 64]
+
+  shape_n_f: 32
+  shape_D_c: 64
+  shape_m: [1, 2, 4, 8, 16, 32]
