@@ -41,6 +41,7 @@ def run(ctx: RunContext):
     batch = p.get("batch", 32)
     eval_batches = p.get("eval_batches", 8)
     lr = p.get("lr", 1e-3)
+    lora_lr = p.get("lora_lr", None)
     seeds = p.get("seeds", [0, 1])
     acc_thresh = p.get("acc_thresh", 0.9)
     lora_r = p.get("lora_r", 16)
@@ -58,8 +59,8 @@ def run(ctx: RunContext):
             for seed in seeds:
                 r = fit_real_compression(
                     model_name=model_name, n_f=n_f, m=m, V=V, K=K, steps=steps,
-                    batch=batch, eval_batches=eval_batches, lr=lr, seed=seed,
-                    device=ctx.device, log=log if cfg.get("verbose") else None,
+                    batch=batch, eval_batches=eval_batches, lr=lr, lora_lr=lora_lr,
+                    seed=seed, device=ctx.device, log=log if cfg.get("verbose") else None,
                     use_lora=use_lora, lora_r=lora_r,
                 )
                 records.append(result_to_dict(r))

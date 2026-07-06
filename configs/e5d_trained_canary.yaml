@@ -1,0 +1,28 @@
+# E5d canary — CAN the faithful xRAG/GIST-style trained compressor learn at all with a real
+# training budget? F11 found it at chance at <=300 steps with one high LR; this retries with the
+# fixed recipe (separate head/LoRA LRs, cosine decay, grad clip) at 1200 steps on 4 probe cells:
+#   (n_f=4,  m=4)  easy   — one fact per slot; should learn if anything can
+#   (n_f=4,  m=1)  mid    — 4 facts in one token (probe put single-vector @ n_f=4 at ~0.32)
+#   (n_f=16, m=4)  hard   — 4 facts per slot
+#   (n_f=16, m=1)  wall   — 16 facts in one token; should stay near chance
+# If the easy cell leaves chance and the wall cell doesn't, the trained compressor is showing the
+# same wall the probe predicts -> queue the full grid (e5d). V=8 matches the probe (chance 0.125).
+name: e5d_trained_canary
+experiment: e5_real_compression_wall
+seed: 0
+verbose: true
+
+params:
+  model: Qwen/Qwen2.5-0.5B
+  n_f_list: [4, 16]
+  m_list: [1, 4]
+  V: 8
+  K: 64
+  steps: 1200
+  batch: 32
+  eval_batches: 12
+  lr: 0.001
+  lora_lr: 0.0002
+  seeds: [0]
+  acc_thresh: 0.9
+  lora_r: 16

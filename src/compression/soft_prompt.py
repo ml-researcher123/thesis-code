@@ -87,8 +87,8 @@ class RealCompressionResult:
 
 
 def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
-                         eval_batches=8, lr=1e-3, seed=0, device="cpu", log=None,
-                         use_lora=True, lora_r=16):
+                         eval_batches=8, lr=1e-3, lora_lr=None, seed=0, device="cpu",
+                         log=None, use_lora=True, lora_r=16):
     set_seed(seed)
     device = torch.device(device)
     from transformers import AutoModel
@@ -116,8 +116,18 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
     key_ids = pick_token_ids(vocab, K, seed)
     value_ids = pick_token_ids(vocab, V, seed + 1, exclude=set(key_ids))
     heads = WriteReadHeads(d, V).to(device)
-    trainable = list(heads.parameters()) + [p for p in model.parameters() if p.requires_grad]
-    opt = torch.optim.Adam(trainable, lr=lr)
+    # Separate LR for the (from-scratch) heads and the (delicate) LoRA adapter: the earlier
+    # at-chance smokes (F11) drove everything at one high LR, which destabilizes LoRA. A lower
+    # adapter LR + cosine decay + grad clipping is the standard recipe that lets the frozen
+    # model actually learn to read the soft tokens given enough steps.
+    lora_params = [p for p in model.parameters() if p.requires_grad]
+    groups = [{"params": list(heads.parameters()), "lr": lr}]
+    if lora_params:
+        groups.append({"params": lora_params, "lr": (lora_lr if lora_lr is not None else lr / 5)})
+    opt = torch.optim.Adam(groups)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, steps),
+                                                       eta_min=0.1 * lr)
+    trainable = list(heads.parameters()) + lora_params
 
     def forward(pass_ids, q_key_id):
         with torch.no_grad():
@@ -135,7 +145,9 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
         loss = F.cross_entropy(logits, target)
         opt.zero_grad(set_to_none=True)
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(trainable, 1.0)
         opt.step()
+        sched.step()
         final_loss = float(loss.detach().cpu())
         if log and (step % max(1, steps // 4) == 0 or step == steps - 1):
             log(f"    n_f={n_f} m={m} seed={seed} step={step:4d} loss={final_loss:.4f}")
