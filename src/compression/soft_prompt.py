@@ -18,8 +18,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import gc
 import importlib.metadata
+import os
 import subprocess
 import sys
+import time
 
 import numpy as np
 import torch
@@ -95,9 +97,20 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
                          log=None, use_lora=True, lora_r=16):
     set_seed(seed)
     device = torch.device(device)
+    os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "20")
+    os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "120")
     from transformers import AutoModel
 
-    model = AutoModel.from_pretrained(model_name, torch_dtype=torch.float32)
+    if log:
+        log(f"    n_f={n_f} m={m} seed={seed} loading base model {model_name}")
+    t_load = time.time()
+    model = AutoModel.from_pretrained(
+        model_name,
+        torch_dtype=torch.float32,
+        low_cpu_mem_usage=True,
+    )
+    if log:
+        log(f"    n_f={n_f} m={m} seed={seed} loaded base model in {time.time() - t_load:.1f}s")
     emb = model.get_input_embeddings()
     d = emb.embedding_dim
     vocab = emb.num_embeddings
