@@ -16,6 +16,7 @@ capacity wall in m for a real model.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import gc
 import importlib.metadata
 import subprocess
 import sys
@@ -173,18 +174,33 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
         if log and (step % max(1, steps // 4) == 0 or step == steps - 1):
             log(f"    n_f={n_f} m={m} seed={seed} step={step:4d} loss={final_loss:.4f}")
 
+    if log:
+        log(f"    n_f={n_f} m={m} seed={seed} evaluating {eval_batches} batches")
+    model.eval()
+    heads.eval()
     accs = []
-    for e in range(eval_batches):
-        pass_ids, q_key, target = make_batch(key_ids, value_ids, n_f, batch, 70000 + e, device)
-        with torch.no_grad():
+    with torch.inference_mode():
+        for e in range(eval_batches):
+            pass_ids, q_key, target = make_batch(key_ids, value_ids, n_f, batch, 70000 + e, device)
             logits = forward(pass_ids, q_key)
-        accs.append(float((logits.argmax(-1) == target).float().mean().cpu()))
+            accs.append(float((logits.argmax(-1) == target).float().mean().cpu()))
 
-    return RealCompressionResult(
+    result = RealCompressionResult(
         model=model_name, n_f=n_f, m=m, V=V, K=K, seed=seed,
         accuracy=float(np.mean(accs)), chance=1.0 / V,
         final_loss=final_loss, steps=steps, use_lora=use_lora,
     )
+    if log:
+        log(f"    n_f={n_f} m={m} seed={seed} eval_acc={result.accuracy:.3f}; cleanup")
+    del opt, sched, trainable, lora_params, heads, model, emb
+    gc.collect()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+        try:
+            torch.cuda.ipc_collect()
+        except RuntimeError:
+            pass
+    return result
 
 
 def result_to_dict(r: RealCompressionResult) -> dict:
