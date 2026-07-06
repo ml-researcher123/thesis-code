@@ -16,6 +16,9 @@ capacity wall in m for a real model.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import importlib.metadata
+import subprocess
+import sys
 
 import numpy as np
 import torch
@@ -102,6 +105,24 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
     # adapt its attention with LoRA (the standard soft-prompt-compression recipe). Without
     # LoRA the heads alone sit at chance (verified empirically).
     if use_lora:
+        # Kaggle currently ships torchao 0.10.0 in some images. Recent PEFT checks
+        # for torchao before falling back to ordinary Linear layers and raises if the
+        # installed torchao is older than PEFT supports. This experiment uses normal
+        # fp32 Linear modules, not torchao quantization, so removing an incompatible
+        # torchao package is safer than upgrading Torch/CUDA in the active session.
+        try:
+            torchao_version = importlib.metadata.version("torchao")
+        except importlib.metadata.PackageNotFoundError:
+            torchao_version = None
+        if torchao_version is not None:
+            major_minor = tuple(int(x) for x in torchao_version.split(".")[:2])
+            if major_minor < (0, 16):
+                if log:
+                    log(f"    uninstalling incompatible torchao=={torchao_version} before PEFT LoRA")
+                subprocess.run(
+                    [sys.executable, "-m", "pip", "uninstall", "-y", "-q", "torchao"],
+                    check=False,
+                )
         from peft import LoraConfig, get_peft_model
         lcfg = LoraConfig(r=lora_r, lora_alpha=2 * lora_r, lora_dropout=0.0, bias="none",
                           target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
