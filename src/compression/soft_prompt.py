@@ -92,22 +92,34 @@ class RealCompressionResult:
     use_lora: bool = True
 
 
+def default_hf_cache_dir() -> str | None:
+    """Use a Kaggle-local cache outside the repo to avoid stale shared HF locks."""
+    if os.path.isdir("/kaggle/working"):
+        return "/kaggle/working/hf_cache_e5"
+    return os.environ.get("ACE_HF_CACHE_DIR")
+
+
 def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
                          eval_batches=8, lr=1e-3, lora_lr=None, seed=0, device="cpu",
-                         log=None, use_lora=True, lora_r=16):
+                         log=None, use_lora=True, lora_r=16, cache_dir=None):
     set_seed(seed)
     device = torch.device(device)
     os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "20")
     os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "120")
+    cache_dir = cache_dir or default_hf_cache_dir()
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
     from transformers import AutoModel
 
     if log:
-        log(f"    n_f={n_f} m={m} seed={seed} loading base model {model_name}")
+        log(f"    n_f={n_f} m={m} seed={seed} loading base model {model_name}"
+            f"{' cache=' + cache_dir if cache_dir else ''}")
     t_load = time.time()
     model = AutoModel.from_pretrained(
         model_name,
         torch_dtype=torch.float32,
         low_cpu_mem_usage=True,
+        cache_dir=cache_dir,
     )
     if log:
         log(f"    n_f={n_f} m={m} seed={seed} loaded base model in {time.time() - t_load:.1f}s")
