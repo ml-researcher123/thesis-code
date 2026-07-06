@@ -1,0 +1,26 @@
+# E5d — the compression wall in a faithfully TRAINED gist/xRAG-style soft compressor.
+# Canary (e5d_trained_canary) broke the F11 blocker: with LR groups + cosine + clip the
+# compressor trains (n_f=4 -> 0.44-0.45 vs chance 0.125) and shows the wall (n_f=16 pinned at
+# chance, training loss converged to ln(8)=2.08 = uniform-guess entropy -- an information
+# ceiling even in-sample, not underfitting). Full n_f x m grid to trace the wall boundary and
+# compare its location against the probe's prediction (E5/E5b: single vector overflows between
+# n_f=2 and 8; recovery requires m ~ n_f with a per-slot width floor).
+name: e5d_trained_wall
+experiment: e5_real_compression_wall
+seed: 0
+verbose: true
+
+params:
+  model: Qwen/Qwen2.5-0.5B
+  n_f_list: [2, 4, 8, 16]
+  m_list: [1, 2, 4, 8]
+  V: 8
+  K: 64
+  steps: 2000
+  batch: 32
+  eval_batches: 12
+  lr: 0.001
+  lora_lr: 0.0002
+  seeds: [0, 1]
+  acc_thresh: 0.9
+  lora_r: 16
