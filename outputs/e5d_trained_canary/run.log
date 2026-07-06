@@ -1,0 +1,30 @@
+[     0.0s] === run 'e5d_trained_canary' ===
+[     0.0s] host=36230bd4ea20 python=3.12.13 config=/kaggle/working/repo/configs/e5d_trained_canary.yaml
+[     0.3s] device=cuda seed=0
+[    19.1s] E5 real compression wall | model=Qwen/Qwen2.5-0.5B n_f=[4, 16] m=[1, 4] V=8 seeds=[0] device=cuda
+[    29.2s]     n_f=4 m=1 seed=0 step=   0 loss=3.5269
+[    65.2s]     n_f=4 m=1 seed=0 step= 300 loss=1.2666
+[   101.4s]     n_f=4 m=1 seed=0 step= 600 loss=1.1564
+[   137.5s]     n_f=4 m=1 seed=0 step= 900 loss=1.1604
+[   173.7s]     n_f=4 m=1 seed=0 step=1199 loss=1.2558
+[   174.3s]   n_f=  4 m=  1 | acc=0.451+-0.000 loss=1.2558 (chance=0.125)
+[   176.3s]     n_f=4 m=4 seed=0 step=   0 loss=3.9761
+[   214.3s]     n_f=4 m=4 seed=0 step= 300 loss=1.1756
+[   253.1s]     n_f=4 m=4 seed=0 step= 600 loss=1.1277
+[   292.1s]     n_f=4 m=4 seed=0 step= 900 loss=1.1754
+[   330.5s]     n_f=4 m=4 seed=0 step=1199 loss=1.2455
+[   331.2s]   n_f=  4 m=  4 | acc=0.438+-0.000 loss=1.2455 (chance=0.125)
+[   332.7s]     n_f=16 m=1 seed=0 step=   0 loss=3.5235
+[   369.4s]     n_f=16 m=1 seed=0 step= 300 loss=2.0851
+[   406.9s]     n_f=16 m=1 seed=0 step= 600 loss=2.0840
+[   444.0s]     n_f=16 m=1 seed=0 step= 900 loss=2.0809
+[   483.0s]     n_f=16 m=1 seed=0 step=1199 loss=2.0811
+[   483.6s]   n_f= 16 m=  1 | acc=0.143+-0.000 loss=2.0811 (chance=0.125)
+[   485.3s]     n_f=16 m=4 seed=0 step=   0 loss=3.0445
+[   527.3s]     n_f=16 m=4 seed=0 step= 300 loss=2.0861
+[   569.7s]     n_f=16 m=4 seed=0 step= 600 loss=2.0842
+[   612.5s]     n_f=16 m=4 seed=0 step= 900 loss=2.0807
+[   655.2s]     n_f=16 m=4 seed=0 step=1199 loss=2.0792
+[   655.9s]   n_f= 16 m=  4 | acc=0.143+-0.000 loss=2.0792 (chance=0.125)
+[   656.3s]   saved figure -> e5_real_compression_wall.png
+[   656.3s] === done in 656.0s -> /kaggle/working/repo/outputs/e5d_trained_canary ===

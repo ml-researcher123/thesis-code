@@ -1,0 +1,106 @@
+{
+  "experiment": "e5_real_compression_wall",
+  "config_params": {
+    "model": "Qwen/Qwen2.5-0.5B",
+    "n_f_list": [
+      4,
+      16
+    ],
+    "m_list": [
+      1,
+      4
+    ],
+    "V": 8,
+    "K": 64,
+    "steps": 1200,
+    "batch": 32,
+    "eval_batches": 12,
+    "lr": 0.001,
+    "lora_lr": 0.0002,
+    "seeds": [
+      0
+    ],
+    "acc_thresh": 0.9,
+    "lora_r": 16
+  },
+  "model": "Qwen/Qwen2.5-0.5B",
+  "records": [
+    {
+      "model": "Qwen/Qwen2.5-0.5B",
+      "n_f": 4,
+      "m": 1,
+      "V": 8,
+      "K": 64,
+      "seed": 0,
+      "accuracy": 0.4505208333333333,
+      "chance": 0.125,
+      "final_loss": 1.2558162212371826,
+      "steps": 1200,
+      "use_lora": true
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B",
+      "n_f": 4,
+      "m": 4,
+      "V": 8,
+      "K": 64,
+      "seed": 0,
+      "accuracy": 0.4375,
+      "chance": 0.125,
+      "final_loss": 1.2455486059188843,
+      "steps": 1200,
+      "use_lora": true
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B",
+      "n_f": 16,
+      "m": 1,
+      "V": 8,
+      "K": 64,
+      "seed": 0,
+      "accuracy": 0.14322916666666666,
+      "chance": 0.125,
+      "final_loss": 2.0811243057250977,
+      "steps": 1200,
+      "use_lora": true
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B",
+      "n_f": 16,
+      "m": 4,
+      "V": 8,
+      "K": 64,
+      "seed": 0,
+      "accuracy": 0.14322916666666666,
+      "chance": 0.125,
+      "final_loss": 2.079237937927246,
+      "steps": 1200,
+      "use_lora": true
+    }
+  ],
+  "curve": {
+    "4": {
+      "1": 0.4505208333333333,
+      "4": 0.4375
+    },
+    "16": {
+      "1": 0.14322916666666666,
+      "4": 0.14322916666666666
+    }
+  },
+  "critical_m": {
+    "4": null,
+    "16": null
+  },
+  "acc_thresh": 0.9,
+  "figure": "e5_real_compression_wall.png",
+  "_meta": {
+    "name": "e5d_trained_canary",
+    "experiment": "e5_real_compression_wall",
+    "seconds": 656.02,
+    "device": "cuda",
+    "python": "3.12.13",
+    "host": "36230bd4ea20",
+    "finished_at": "2026-07-06T08:38:12"
+  }
+}
