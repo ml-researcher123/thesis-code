@@ -281,9 +281,9 @@ own from-scratch attempt sits at chance without a large training budget, App.~\r
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.49\linewidth]{figures/e1_capacity_wall.png}
+\includegraphics[width=0.46\linewidth]{figures/e1_capacity_wall.png}
 \hfill
-\includegraphics[width=0.49\linewidth]{figures/e8_limit.png}
+\includegraphics[width=0.46\linewidth]{figures/e8_limit.png}
 \caption{\textbf{C1.} Left: the free-embedding retrieval wall---realizability jumps sharply once
 $\dr$ clears a critical value that grows with corpus size $n_d$. Right: on LIMIT, three real
 embedder families all fail the adversarial pattern at full dimension.}
@@ -340,6 +340,16 @@ at every operating point.}
 \section{Budget-optimal allocation (C3)}
 \label{sec:alloc}
 
+\paragraph{What the budget measures.} $B=\dr+D_c$ prices one retrieval dimension against one
+compression dimension. This is exact under the accounting where the stages actually compete in
+deployments---per-document representation storage: the ANN index ($N\dr$ floats) and the code
+cache ($ND_c$ floats) occupy the same corpus-scaled memory, so $B$ is floats per document.
+Query-time compute instead prices the stages deployment-dependently (index scan $\propto N$ per
+dimension; reader prefill ${\approx}2P$ FLOPs per \emph{token}, independent of slot width), so no
+universal FLOP unit exists (Appendix~\ref{app:budget}). The conclusions do not hinge on the
+pricing: under cost $\alpha\dr+D_c$ the optimum stays interior and the gap positive for every
+$\alpha\in[\tfrac14,4]$, only its location shifting as pricing predicts (Table~\ref{tab:alpha}).
+
 Because the pipeline is (near-)multiplicative, the optimal split of a fixed budget follows a simple
 recipe: fund retrieval up to its wall $\dr^\star$, then pour the remainder into compression, since
 dimensions past the retrieval wall buy almost nothing while the compressor is still starved. On the
@@ -351,10 +361,10 @@ the stages alone reach $0.63$ and $0.89$, a compounding gap of $0.392$ that shri
 $B=256$ (Figure~\ref{fig:c2c3}, left). The practical statement is blunt: the standard configuration
 of a large $\dr\!\approx\!768\!-\!1024$ embedding with a tiny $m\!\approx\!1\!-\!8$ compressor sits
 far off the frontier, since it spends heavily on embedding dimensions past the retrieval wall while
-the compressor overflows, and re-allocating the same budget buys accuracy for free. This is not just
-a frontier picture but a concrete intervention: on real QA (E9, below), moving the shared budget
-from the deployed big-retrieval/tiny-compression corner to the interior optimum raises answer F1 by
-$+0.032$ (1.5B reader) and $+0.035$ (7B) at $B{=}256$, at identical token cost. Combined with C1,
+the compressor overflows, and re-allocating the same budget buys accuracy for free. Concretely, on
+real QA (E9, below), moving the shared budget from the deployed big-retrieval/tiny-compression
+corner to the interior optimum raises answer F1 by $+0.032$ (1.5B reader) and $+0.035$ (7B) at
+$B{=}256$, at identical token cost. Combined with C1,
 which locates each wall cheaply by truncation, this is an actionable procedure: measure both walls,
 then split the budget so retrieval is funded to $\dr^\star$ and the rest goes to compression.
 
@@ -387,7 +397,7 @@ gap is $0.048\pm0.014$ F1 with the same single-peaked interior optimum.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/e9_real_qa.pdf}
+\includegraphics[width=0.92\linewidth]{figures/e9_real_qa.pdf}
 \caption{\textbf{C2--C3 on real multi-hop QA} (HotpotQA, \texttt{Qwen2.5-1.5B} reader, EM/F1, three
 seeds). End-to-end F1 versus the retrieval share of a fixed budget. The curve is single-peaked with
 an interior optimum (red), and past it more retrieval budget hurts (it starves compression). The
@@ -427,9 +437,9 @@ core (C1--C3) from an overclaim.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.48\linewidth]{figures/c4_facetlens_escape.png}
+\includegraphics[width=0.45\linewidth]{figures/c4_facetlens_escape.png}
 \hfill
-\includegraphics[width=0.48\linewidth]{figures/c4b_real_facetlens.png}
+\includegraphics[width=0.45\linewidth]{figures/c4b_real_facetlens.png}
 \caption{\textbf{C4 and its scope.} Left (free vectors): routed facet-lenses escape the wall at
 half the budget of a single vector, while generic multiview is worse than single. Right (frozen
 real encoder): the escape vanishes---a single learned projection ties the routed lenses and leads
@@ -560,5 +570,46 @@ all conditions with the same objective and budget and report mean average precis
 \paragraph{Compute.} All runs use a single commodity GPU (Kaggle T4 or P100). Real-encoder runs
 encode the corpus once and cache it; wall-clock ranges from seconds (LIMIT-small; the free-vector
 sweeps) to about twenty-six minutes for the $50$k-document LIMIT-full sweep across three embedders.
+
+\section{Budget accounting and exchange-rate sensitivity}
+\label{app:budget}
+
+\paragraph{Cost accounting.} Per query, a brute-force index scan costs ${\approx}2N\dr$ FLOPs
+(reduced proportionally by the probed fraction under ANN); reader prefill over the compressed code
+costs ${\approx}2Pm$ FLOPs for a $P$-parameter reader---per \emph{token}, with the slot width
+$\dc$ free up to the reader's hidden size (the projector is negligible). Per document, storage is
+$\dr+D_c$ floats regardless of deployment. A worked example shows why no universal FLOP unit
+exists: at $N{=}10^6$ documents and $P{=}1.5$B, one compression token costs ${\approx}3{\times}10^9$
+FLOPs at query time---roughly $1{,}500$ retrieval dimensions---whereas per-document storage prices
+them $1{:}1$; at $N{=}10^9$ the same token is worth ${\approx}1.5$ dimensions. Since the rate spans
+three orders of magnitude across realistic deployments, we report the storage-exact budget and
+verify below that the paper's conclusions are insensitive to the rate.
+
+\paragraph{Exchange-rate sensitivity.} Using E6's measured per-stage curves and composing by the
+product law that E7 validates to ${\sim}10^{-3}$, we re-derive the optimum under cost
+$\alpha\dr+D_c$ for $\alpha\in\{\tfrac14,\tfrac12,1,2,4\}$ at a tight and a loose budget
+(Table~\ref{tab:alpha}). At every $\alpha$ the optimum allocates substantial budget to both stages
+and strictly dominates both all-in allocations by a wide margin, and the compounding gap stays
+positive; only the optimum's location moves, in the direction pricing predicts (dearer retrieval
+dimensions shift it toward compression).
+
+\begin{table}[h]
+\caption{Exchange-rate sensitivity of the allocation conclusions (E6 curves, product composition).
+``All-in'' = the full budget to one stage (other at the grid minimum); gap = compounding gap vs
+the standalone references. The optimum is interior and the gap positive for every $\alpha$.}
+\label{tab:alpha}
+\centering\small
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+$\alpha$ & budget & optimum $(\dr,D_c)$ & pipeline & all-in-R & all-in-C & gap\\
+\midrule
+$0.25$ & tight / loose & $(64,64)$ / $(128,128)$ & $0.227$ / $0.557$ & $0.130$ / $0.134$ & $0.073$ / $0.105$ & $+0.214$ / $+0.079$\\
+$0.5$  & tight / loose & $(64,64)$ / $(128,128)$ & $0.227$ / $0.557$ & $0.118$ / $0.130$ & $0.073$ / $0.105$ & $+0.214$ / $+0.079$\\
+$1$    & tight / loose & $(64,64)$ / $(128,128)$ & $0.227$ / $0.557$ & $0.069$ / $0.118$ & $0.073$ / $0.105$ & $+0.397$ / $+0.133$\\
+$2$    & tight / loose & $(32,128)$ / $(128,128)$ & $0.244$ / $0.557$ & $0.069$ / $0.118$ & $0.105$ / $0.116$ & $+0.123$ / $+0.067$\\
+$4$    & tight / loose & $(32,128)$ / $(128,128)$ & $0.244$ / $0.557$ & $0.069$ / $0.118$ & $0.116$ / $0.118$ & $+0.123$ / $+0.067$\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}
