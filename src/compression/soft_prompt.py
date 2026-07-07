@@ -204,6 +204,20 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
                     [sys.executable, "-m", "pip", "uninstall", "-y", "-q", "torchao"],
                     check=False,
                 )
+                # A live `pip uninstall` removes the dist-info from disk, but this SAME
+                # interpreter can still have importlib.metadata's path-finder cache from the
+                # version() check just above, so without invalidating it peft's own
+                # is_torchao_available() (which does its own metadata lookup) still sees the
+                # just-uninstalled version and raises anyway -- exactly what was happening here.
+                importlib.invalidate_caches()
+                try:
+                    still_there = importlib.metadata.version("torchao")
+                    if log:
+                        log(f"    !! torchao still importable after uninstall ({still_there}); "
+                            "pip target may differ from this interpreter's site-packages")
+                except importlib.metadata.PackageNotFoundError:
+                    if log:
+                        log("    torchao purge confirmed (no longer importable)")
         from peft import LoraConfig, get_peft_model
         lcfg = LoraConfig(r=lora_r, lora_alpha=2 * lora_r, lora_dropout=0.0, bias="none",
                           target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
