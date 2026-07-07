@@ -1,0 +1,31 @@
+[     0.0s] === run 'e10_squad_seed0' ===
+[     0.0s] host=5f30c5f90730 python=3.12.13 config=/kaggle/working/repo/configs/e10_squad_seed0.yaml
+[     0.3s] device=cuda seed=0
+[    36.8s] E9 real QA | dataset=squad embedder=mixedbread-ai/mxbai-embed-large-v1 reader=Qwen/Qwen2.5-1.5B-Instruct n_q=300 budgets=[128, 256] B_tok=160 device=cuda
+[    39.9s]   pooled corpus: 1500 paragraphs; 300 questions
+[    77.4s]   encoded 1500 paras, 7810 sentences, dim=1024
+[   106.0s]   reader loaded: Qwen/Qwen2.5-1.5B-Instruct (4bit=False)
+[   123.7s]   [B=128] d_r=  16 d_c= 112 | recall=0.337 aic=0.343 f1=0.241 em=0.183
+[   142.5s]   [B=128] d_r=  32 d_c=  96 | recall=0.563 aic=0.517 f1=0.398 em=0.32
+[   163.0s]   [B=128] d_r=  48 d_c=  80 | recall=0.693 aic=0.597 f1=0.453 em=0.343
+[   184.3s]   [B=128] d_r=  64 d_c=  64 | recall=0.753 aic=0.617 f1=0.487 em=0.387
+[   204.7s]   [B=128] d_r=  80 d_c=  48 | recall=0.787 aic=0.637 f1=0.506 em=0.403
+[   224.7s]   [B=128] d_r=  96 d_c=  32 | recall=0.840 aic=0.653 f1=0.512 em=0.387
+[   243.8s]   [B=128] d_r= 112 d_c=  16 | recall=0.847 aic=0.577 f1=0.424 em=0.33
+[   286.1s]   [B=128] best=96:32 f1=0.512 | standalone_R=0.591 standalone_C=0.757 compounding_gap=0.079
+[   304.8s]   [B=256] d_r=  16 d_c= 240 | recall=0.337 aic=0.343 f1=0.254 em=0.19
+[   324.0s]   [B=256] d_r=  32 d_c= 224 | recall=0.563 aic=0.513 f1=0.381 em=0.29
+[   345.0s]   [B=256] d_r=  48 d_c= 208 | recall=0.693 aic=0.640 f1=0.491 em=0.37
+[   365.8s]   [B=256] d_r=  64 d_c= 192 | recall=0.753 aic=0.663 f1=0.52 em=0.393
+[   386.6s]   [B=256] d_r=  80 d_c= 176 | recall=0.787 aic=0.683 f1=0.543 em=0.413
+[   407.7s]   [B=256] d_r=  96 d_c= 160 | recall=0.840 aic=0.727 f1=0.568 em=0.437
+[   429.3s]   [B=256] d_r= 112 d_c= 144 | recall=0.847 aic=0.717 f1=0.563 em=0.437
+[   451.3s]   [B=256] d_r= 128 d_c= 128 | recall=0.837 aic=0.727 f1=0.577 em=0.46
+[   472.2s]   [B=256] d_r= 144 d_c= 112 | recall=0.850 aic=0.730 f1=0.588 em=0.467
+[   493.2s]   [B=256] d_r= 160 d_c=  96 | recall=0.863 aic=0.733 f1=0.589 em=0.473
+[   514.9s]   [B=256] d_r= 176 d_c=  80 | recall=0.877 aic=0.740 f1=0.577 em=0.453
+[   536.5s]   [B=256] d_r= 192 d_c=  64 | recall=0.890 aic=0.747 f1=0.584 em=0.457
+[   556.7s]   [B=256] d_r= 224 d_c=  32 | recall=0.903 aic=0.710 f1=0.558 em=0.447
+[   598.9s]   [B=256] best=160:96 f1=0.589 | standalone_R=0.616 standalone_C=0.764 compounding_gap=0.026
+[   599.3s]   saved figure -> e9_real_qa.png
+[   599.3s] === done in 599.0s -> /kaggle/working/repo/outputs/e10_squad_seed0 ===
