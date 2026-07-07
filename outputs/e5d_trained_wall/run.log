@@ -154,3 +154,56 @@ RuntimeError: isolated trial failed (1): nf2_m1_seed0
     raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
 RuntimeError: isolated trial failed (1): nf2_m1_seed0
 
+[     0.0s] === run 'e5d_trained_wall' ===
+[     0.0s] host=bc05a5e04ecb python=3.12.13 config=/kaggle/working/repo/configs/e5d_trained_wall.yaml
+[     0.3s] device=cuda seed=0
+[    18.0s] E5 real compression wall | model=Qwen/Qwen2.5-0.5B n_f=[2, 4, 8, 16] m=[1, 2, 4, 8] V=8 seeds=[0, 1] device=cuda
+[    18.0s]     resolving HF snapshot for Qwen/Qwen2.5-0.5B cache=/kaggle/working/hf_cache_e5 timeout=300s
+[    29.6s]     resolved HF snapshot: /kaggle/working/hf_cache_e5/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987
+[    29.6s]     isolated trial start nf2_m1_seed0 timeout=900s
+[   278.9s]     isolated trial start nf2_m1_seed1 timeout=900s
+[   529.0s]   n_f=  2 m=  1 | acc=0.540+-0.014 loss=0.6273 (chance=0.125)
+[   529.0s]     isolated trial start nf2_m2_seed0 timeout=900s
+[   777.9s]     isolated trial start nf2_m2_seed1 timeout=900s
+[  1018.0s]   n_f=  2 m=  2 | acc=0.999+-0.001 loss=0.0000 (chance=0.125)
+[  1018.0s]     isolated trial start nf2_m4_seed0 timeout=900s
+[  1266.6s]     isolated trial start nf2_m4_seed1 timeout=900s
+[  1505.9s]   n_f=  2 m=  4 | acc=1.000+-0.000 loss=0.0000 (chance=0.125)
+[  1505.9s]     isolated trial start nf4_m1_seed0 timeout=900s
+[  1743.6s]     isolated trial start nf4_m1_seed1 timeout=900s
+[  1981.4s]   n_f=  4 m=  1 | acc=0.443+-0.026 loss=1.1281 (chance=0.125)
+[  1981.4s]     isolated trial start nf4_m2_seed0 timeout=900s
+[  2223.9s]     isolated trial start nf4_m2_seed1 timeout=900s
+[  2473.6s]   n_f=  4 m=  2 | acc=0.461+-0.018 loss=1.1439 (chance=0.125)
+[  2473.6s]     isolated trial start nf4_m4_seed0 timeout=900s
+[  2716.6s]     isolated trial start nf4_m4_seed1 timeout=900s
+[  2956.7s]   n_f=  4 m=  4 | acc=0.724+-0.276 loss=0.5582 (chance=0.125)
+[  2956.7s]     isolated trial start nf4_m8_seed0 timeout=900s
+[  3342.6s]     isolated trial start nf4_m8_seed1 timeout=900s
+[  3728.6s]   n_f=  4 m=  8 | acc=1.000+-0.000 loss=0.0000 (chance=0.125)
+[  3728.6s]     isolated trial start nf8_m1_seed0 timeout=900s
+[  3973.1s]     isolated trial start nf8_m1_seed1 timeout=900s
+[  4213.7s]   n_f=  8 m=  1 | acc=0.354+-0.003 loss=1.5515 (chance=0.125)
+[  4213.7s]     isolated trial start nf8_m2_seed0 timeout=900s
+[  4461.2s]     isolated trial start nf8_m2_seed1 timeout=900s
+[  4700.7s]   n_f=  8 m=  2 | acc=0.297+-0.081 loss=1.7495 (chance=0.125)
+[  4700.7s]     isolated trial start nf8_m4_seed0 timeout=900s
+[  4941.8s]     isolated trial start nf8_m4_seed1 timeout=900s
+[  5182.8s]   n_f=  8 m=  4 | acc=0.439+-0.001 loss=1.2935 (chance=0.125)
+[  5182.8s]     isolated trial start nf8_m8_seed0 timeout=900s
+[  5568.9s]     isolated trial start nf8_m8_seed1 timeout=900s
+[  5954.6s]   n_f=  8 m=  8 | acc=1.000+-0.000 loss=0.0000 (chance=0.125)
+[  5954.6s]     isolated trial start nf16_m1_seed0 timeout=900s
+[  6203.4s]     isolated trial start nf16_m1_seed1 timeout=900s
+[  6443.7s]   n_f= 16 m=  1 | acc=0.215+-0.072 loss=1.9782 (chance=0.125)
+[  6443.7s]     isolated trial start nf16_m2_seed0 timeout=900s
+[  6690.7s]     isolated trial start nf16_m2_seed1 timeout=900s
+[  6928.1s]   n_f= 16 m=  2 | acc=0.113+-0.030 loss=2.0817 (chance=0.125)
+[  6928.1s]     isolated trial start nf16_m4_seed0 timeout=900s
+[  7170.3s]     isolated trial start nf16_m4_seed1 timeout=900s
+[  7414.9s]   n_f= 16 m=  4 | acc=0.113+-0.030 loss=2.0804 (chance=0.125)
+[  7414.9s]     isolated trial start nf16_m8_seed0 timeout=900s
+[  7797.8s]     isolated trial start nf16_m8_seed1 timeout=900s
+[  8178.7s]   n_f= 16 m=  8 | acc=0.126+-0.017 loss=2.0811 (chance=0.125)
+[  8179.1s]   saved figure -> e5_real_compression_wall.png
+[  8179.1s] === done in 8178.8s -> /kaggle/working/repo/outputs/e5d_trained_wall ===

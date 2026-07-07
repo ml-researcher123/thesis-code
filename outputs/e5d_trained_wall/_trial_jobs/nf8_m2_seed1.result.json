@@ -1,0 +1,1 @@
+{"model": "Qwen/Qwen2.5-0.5B", "n_f": 8, "m": 2, "V": 8, "K": 64, "seed": 1, "accuracy": 0.21614583333333334, "chance": 0.125, "final_loss": 2.0618155002593994, "steps": 2000, "use_lora": true}
