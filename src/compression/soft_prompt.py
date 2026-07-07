@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import gc
 import importlib.metadata
+import multiprocessing as mp
 import os
 import subprocess
 import sys
@@ -99,9 +100,61 @@ def default_hf_cache_dir() -> str | None:
     return os.environ.get("ACE_HF_CACHE_DIR")
 
 
+def _snapshot_download_worker(model_name: str, cache_dir: str, queue: mp.Queue) -> None:
+    try:
+        from huggingface_hub import snapshot_download
+
+        path = snapshot_download(
+            repo_id=model_name,
+            cache_dir=cache_dir,
+            resume_download=True,
+            allow_patterns=[
+                "*.json",
+                "*.safetensors",
+                "*.bin",
+            ],
+        )
+        queue.put(("ok", path))
+    except Exception as exc:  # noqa: BLE001
+        queue.put(("err", repr(exc)))
+
+
+def resolve_model_snapshot(model_name: str, cache_dir: str | None, log=None,
+                           timeout_s: int = 300) -> str:
+    """Resolve/download a HF model snapshot with a hard timeout and clear logs."""
+    if not cache_dir:
+        return model_name
+    os.makedirs(cache_dir, exist_ok=True)
+    if log:
+        log(f"    resolving HF snapshot for {model_name} cache={cache_dir} timeout={timeout_s}s")
+    ctx = mp.get_context("spawn")
+    queue: mp.Queue = ctx.Queue()
+    proc = ctx.Process(target=_snapshot_download_worker, args=(model_name, cache_dir, queue))
+    proc.start()
+    proc.join(timeout_s)
+    if proc.is_alive():
+        proc.terminate()
+        proc.join(10)
+        raise TimeoutError(
+            f"Hugging Face download/model resolution timed out after {timeout_s}s for {model_name}. "
+            "This usually means Kaggle cannot reach Hugging Face, the HF cache is locked, or the "
+            "unauthenticated HF request is stalled. Add an HF_TOKEN Kaggle secret or mount the model "
+            "as an input dataset."
+        )
+    if queue.empty():
+        raise RuntimeError(f"Hugging Face snapshot worker exited without returning a path for {model_name}")
+    status, payload = queue.get()
+    if status != "ok":
+        raise RuntimeError(f"Hugging Face snapshot download failed for {model_name}: {payload}")
+    if log:
+        log(f"    resolved HF snapshot: {payload}")
+    return payload
+
+
 def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
                          eval_batches=8, lr=1e-3, lora_lr=None, seed=0, device="cpu",
-                         log=None, use_lora=True, lora_r=16, cache_dir=None):
+                         log=None, use_lora=True, lora_r=16, cache_dir=None,
+                         model_snapshot=None, download_timeout_s=300):
     set_seed(seed)
     device = torch.device(device)
     os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "20")
@@ -111,15 +164,17 @@ def fit_real_compression(*, model_name, n_f, m, V=16, K=64, steps=300, batch=32,
         os.makedirs(cache_dir, exist_ok=True)
     from transformers import AutoModel
 
+    model_source = model_snapshot or resolve_model_snapshot(
+        model_name, cache_dir, log=log, timeout_s=download_timeout_s
+    )
     if log:
-        log(f"    n_f={n_f} m={m} seed={seed} loading base model {model_name}"
-            f"{' cache=' + cache_dir if cache_dir else ''}")
+        log(f"    n_f={n_f} m={m} seed={seed} loading base model from {model_source}")
     t_load = time.time()
     model = AutoModel.from_pretrained(
-        model_name,
+        model_source,
         torch_dtype=torch.float32,
         low_cpu_mem_usage=True,
-        cache_dir=cache_dir,
+        local_files_only=os.path.isdir(str(model_source)),
     )
     if log:
         log(f"    n_f={n_f} m={m} seed={seed} loaded base model in {time.time() - t_load:.1f}s")

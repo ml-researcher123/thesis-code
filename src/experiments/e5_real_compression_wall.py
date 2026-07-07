@@ -18,7 +18,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from ..common import RunContext, ensure_deps
-from ..compression.soft_prompt import fit_real_compression, result_to_dict
+from ..compression.soft_prompt import (
+    default_hf_cache_dir,
+    fit_real_compression,
+    resolve_model_snapshot,
+    result_to_dict,
+)
 
 
 def run(ctx: RunContext):
@@ -45,10 +50,17 @@ def run(ctx: RunContext):
     seeds = p.get("seeds", [0, 1])
     acc_thresh = p.get("acc_thresh", 0.9)
     lora_r = p.get("lora_r", 16)
-    cache_dir = p.get("cache_dir", None)
+    cache_dir = p.get("cache_dir", None) or default_hf_cache_dir()
+    download_timeout_s = p.get("download_timeout_s", 300)
 
     log(f"E5 real compression wall | model={model_name} n_f={n_f_list} m={m_list} "
         f"V={V} seeds={seeds} device={ctx.device}")
+    model_snapshot = resolve_model_snapshot(
+        model_name,
+        cache_dir,
+        log=log,
+        timeout_s=download_timeout_s,
+    )
 
     records = []
     curve = {nf: {} for nf in n_f_list}
@@ -63,6 +75,7 @@ def run(ctx: RunContext):
                     batch=batch, eval_batches=eval_batches, lr=lr, lora_lr=lora_lr,
                     seed=seed, device=ctx.device, log=log if cfg.get("verbose") else None,
                     use_lora=use_lora, lora_r=lora_r, cache_dir=cache_dir,
+                    model_snapshot=model_snapshot, download_timeout_s=download_timeout_s,
                 )
                 records.append(result_to_dict(r))
                 accs.append(r.accuracy)
