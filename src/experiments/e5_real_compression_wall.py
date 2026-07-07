@@ -8,8 +8,11 @@ both bottlenecks of the thesis are validated on real models.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import subprocess
+import sys
 from statistics import mean, pstdev
 
 import matplotlib
@@ -24,6 +27,43 @@ from ..compression.soft_prompt import (
     resolve_model_snapshot,
     result_to_dict,
 )
+
+
+def _worker_main(job_path: str) -> int:
+    with open(job_path, "r", encoding="utf-8") as fh:
+        job = json.load(fh)
+    kwargs = job["kwargs"]
+    log_stdout = kwargs.pop("log_stdout", False)
+    r = fit_real_compression(**kwargs, log=print if log_stdout else None)
+    with open(job["out_path"], "w", encoding="utf-8") as fh:
+        json.dump(result_to_dict(r), fh)
+    return 0
+
+
+def fit_real_compression_isolated(ctx: RunContext, kwargs: dict, timeout_s: int):
+    """Run one trial in a fresh process to avoid repeated PEFT/CUDA loader hangs."""
+    tmp_dir = os.path.join(ctx.outdir, "_trial_jobs")
+    os.makedirs(tmp_dir, exist_ok=True)
+    stem = f"nf{kwargs['n_f']}_m{kwargs['m']}_seed{kwargs['seed']}"
+    job_path = os.path.join(tmp_dir, f"{stem}.json")
+    out_path = os.path.join(tmp_dir, f"{stem}.result.json")
+    job = {"kwargs": kwargs, "out_path": out_path}
+    with open(job_path, "w", encoding="utf-8") as fh:
+        json.dump(job, fh)
+    cmd = [
+        sys.executable,
+        "-m",
+        "src.experiments.e5_real_compression_wall",
+        "--worker",
+        job_path,
+    ]
+    ctx.log(f"    isolated trial start {stem} timeout={timeout_s}s")
+    res = subprocess.run(cmd, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                         text=True, timeout=timeout_s)
+    if res.returncode != 0:
+        raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
+    with open(out_path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
 
 
 def run(ctx: RunContext):
@@ -52,6 +92,8 @@ def run(ctx: RunContext):
     lora_r = p.get("lora_r", 16)
     cache_dir = p.get("cache_dir", None) or default_hf_cache_dir()
     download_timeout_s = p.get("download_timeout_s", 300)
+    isolated_trials = p.get("isolated_trials", True)
+    trial_timeout_s = p.get("trial_timeout_s", max(900, int(steps * 0.35)))
 
     log(f"E5 real compression wall | model={model_name} n_f={n_f_list} m={m_list} "
         f"V={V} seeds={seeds} device={ctx.device}")
@@ -70,16 +112,23 @@ def run(ctx: RunContext):
                 continue
             accs, losses = [], []
             for seed in seeds:
-                r = fit_real_compression(
+                kwargs = dict(
                     model_name=model_name, n_f=n_f, m=m, V=V, K=K, steps=steps,
                     batch=batch, eval_batches=eval_batches, lr=lr, lora_lr=lora_lr,
-                    seed=seed, device=ctx.device, log=log if cfg.get("verbose") else None,
+                    seed=seed, device=str(ctx.device), log=log if cfg.get("verbose") and not isolated_trials else None,
                     use_lora=use_lora, lora_r=lora_r, cache_dir=cache_dir,
                     model_snapshot=model_snapshot, download_timeout_s=download_timeout_s,
                 )
-                records.append(result_to_dict(r))
-                accs.append(r.accuracy)
-                losses.append(r.final_loss)
+                if isolated_trials:
+                    worker_kwargs = dict(kwargs)
+                    worker_kwargs["log_stdout"] = bool(cfg.get("verbose"))
+                    rec = fit_real_compression_isolated(ctx, worker_kwargs, trial_timeout_s)
+                else:
+                    r = fit_real_compression(**kwargs)
+                    rec = result_to_dict(r)
+                records.append(rec)
+                accs.append(rec["accuracy"])
+                losses.append(rec["final_loss"])
             curve[n_f][m] = mean(accs)
             log(f"  n_f={n_f:3d} m={m:3d} | acc={mean(accs):.3f}+-{pstdev(accs):.3f} "
                 f"loss={mean(losses):.4f} (chance={1.0/V:.3f})")
@@ -139,3 +188,10 @@ def run(ctx: RunContext):
         f"![real compression wall]({os.path.basename(fig)})",
     ]
     return results, "\n".join(lines)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--worker", required=True)
+    args = ap.parse_args()
+    raise SystemExit(_worker_main(args.worker))
