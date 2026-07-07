@@ -1,0 +1,25 @@
+# E10 — breadth of the positive result to a SINGLE-HOP task (SQuAD v1.1), so the interior optimum
+# + compounding gap aren't a multi-hop-Wikipedia artifact. Same E9 pipeline/grid/reader (1.5B); the
+# only change is the dataset: single-hop reading comprehension, one gold paragraph per question,
+# span answers (same EM/F1 metric as E9b/E9d -> directly comparable). Retrieval is over a pooled
+# 1500-paragraph corpus (single gold each); compression is query-conditioned sentence selection.
+# Seed0 first as a pilot; if the effect shows, queue seeds 1,2.
+name: e10_squad_seed2
+experiment: e9_real_qa
+seed: 2
+
+params:
+  dataset: squad
+  max_paragraphs: 1500
+  embedder: mixedbread-ai/mxbai-embed-large-v1
+  reader: Qwen/Qwen2.5-1.5B-Instruct
+  query_prompt: "Represent this sentence for searching relevant passages: "
+  split: validation
+  n_q: 300
+  seed_data: 2
+  top_k: 4
+  budget_tokens: 160
+  budgets: [128, 256]
+  splits: [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224]
+  max_new_tokens: 24
+  gen_batch: 16
