@@ -58,10 +58,23 @@ def fit_real_compression_isolated(ctx: RunContext, kwargs: dict, timeout_s: int)
         job_path,
     ]
     ctx.log(f"    isolated trial start {stem} timeout={timeout_s}s")
-    res = subprocess.run(cmd, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                         text=True, timeout=timeout_s)
+    root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    # capture_output so the worker's actual traceback (which otherwise writes straight to the
+    # inherited stdout/stderr and bypasses our Logger, hence never reaches the committed
+    # run.log) gets surfaced here instead of only in Kaggle's live, uncommitted console.
+    try:
+        res = subprocess.run(cmd, cwd=root, text=True, timeout=timeout_s, capture_output=True)
+    except subprocess.TimeoutExpired as exc:
+        tail = (exc.stderr or "")[-4000:] if exc.stderr else "(no stderr captured before timeout)"
+        ctx.log(f"    !! isolated trial {stem} TIMED OUT after {timeout_s}s; stderr tail:\n{tail}")
+        raise RuntimeError(f"isolated trial {stem} timed out after {timeout_s}s") from exc
     if res.returncode != 0:
-        raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
+        tail_err = (res.stderr or "")[-4000:]
+        tail_out = (res.stdout or "")[-1000:]
+        ctx.log(f"    !! isolated trial {stem} failed (rc={res.returncode}); stderr tail:\n{tail_err}")
+        if tail_out.strip():
+            ctx.log(f"    !! isolated trial {stem} stdout tail:\n{tail_out}")
+        raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}: {tail_err[-500:]}")
     with open(out_path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
