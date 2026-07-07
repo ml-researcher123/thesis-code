@@ -268,25 +268,32 @@ $0.96\!-\!0.99$ once the per-slot width clears a floor. We also flag a scope bou
 under a learned attention-read code, capacity is not shape-invariant---one fat token and many thin
 tokens both collapse while an interior slot count is best---but under real-encoder truncation only
 the thin-slot collapse remains, so the interior optimum is specific to the learned-code mechanism
-rather than a universal law. Two points guard against the objection that this is a probe artifact.
+rather than a universal law. Three points guard against the objection that this is a probe artifact.
 First, the same wall holds on a second embedder family (\texttt{bge-large}, App.~\ref{app:experiments}),
-so it is not specific to one encoder. Second, and more directly, a \emph{deployed} soft-token
-compressor shows exactly this wall in the wild: \citet{belikova2026overflow} detect ``overflow'' in
-the one-token \texttt{xRAG} \citep{cheng2024xrag} code---a regime where the compressed token can no
-longer answer the query---which is precisely the capacity threshold we characterize, so our account
-explains an independently observed phenomenon rather than resting on the probe alone. The probe is
-best read as an \emph{upper bound}: it measures the code's information ceiling with a light,
-reliably-trained reader, so a fully-trained generative soft-compressor can only do worse (indeed our
-own from-scratch attempt sits at chance without a large training budget, App.~\ref{app:impl}).
+so it is not specific to one encoder. Second, a \emph{deployed} soft-token compressor shows exactly
+this wall in the wild: \citet{belikova2026overflow} detect ``overflow'' in the one-token
+\texttt{xRAG} \citep{cheng2024xrag} code---a regime where the compressed token can no longer answer
+the query---which is precisely the capacity threshold we characterize. Third, and most directly, we
+train our own gist/xRAG-style soft compressor (frozen \texttt{Qwen2.5-0.5B} reader, LoRA-adapted
+attention, $2000$ steps) and it shows the same wall rather than a training artifact: at a single
+soft token the recall curve across $n_f{=}2,4,8,16$ is $0.54,0.44,0.35,0.22$, closely tracking the
+probe's shape, the critical token count $m^\star$ grows with content ($2{\to}8{\to}8$), and at
+$n_f{=}16$ recall never clears chance even at $m{=}8$ soft tokens---training loss converges to
+$\ln 8$, the uniform-guess entropy, so this is an information ceiling in-sample, not underfitting
+(Figure~\ref{fig:c1}, right). The probe is thus not merely an upper-bound proxy but a validated one.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.46\linewidth]{figures/e1_capacity_wall.png}
+\includegraphics[width=0.32\linewidth]{figures/e1_capacity_wall.png}
 \hfill
-\includegraphics[width=0.46\linewidth]{figures/e8_limit.png}
+\includegraphics[width=0.32\linewidth]{figures/e8_limit.png}
+\hfill
+\includegraphics[width=0.32\linewidth]{figures/e5d_trained_wall.png}
 \caption{\textbf{C1.} Left: the free-embedding retrieval wall---realizability jumps sharply once
-$\dr$ clears a critical value that grows with corpus size $n_d$. Right: on LIMIT, three real
-embedder families all fail the adversarial pattern at full dimension.}
+$\dr$ clears a critical value that grows with corpus size $n_d$. Middle: on LIMIT, three real
+embedder families all fail the adversarial pattern at full dimension. Right: a real \emph{trained}
+gist/xRAG-style compressor shows the compression wall directly---critical token count $m^\star$
+grows with content and $n_f{=}16$ never clears chance (red), corroborating the probe.}
 \label{fig:c1}
 \end{figure}
 
@@ -522,6 +529,7 @@ E4c & real & mxbai / FiQA (domain shift) & $92\%$ of full recall by $\dr{=}256$\
 E4d & real & bge-large / SciFact; \textbf{PCA} trunc.\ & saturates at $\dr{=}256$ ($98.5\%$)\\
 E5/E5b & real & mxbai code; light read probe & one vector $\approx$ one fact ($0.98\!\to\!0.20$); multi-token recovers to $0.99$\\
 E5c & real & \textbf{bge-large} code; same sweeps & compression wall replicates ($D_c^\star$ grows with $n_f$); F6 thin-slot scope holds\\
+E5d & real & \textbf{trained} gist/xRAG-style compressor (LoRA, 2000 steps) & wall confirmed directly: $m^\star{=}2{\to}8{\to}8{\to}$none for $n_f{=}2,4,8,16$; $n_f{=}16$ loss $\to\ln 8$\\
 E8 & real & LIMIT; 3 embedders; 50k / 46 docs & recall@100 $=2.8/8.2/4.5\%$ (full)\\
 E3 & free & shared budget $B{=}\dr{+}D_c$ & compounding gap $0.389$ at $B{=}64$\\
 E3b & free & Gaussian copula over stage successes & sign of gap set by $\rho$; Fr\'echet-bounded\\

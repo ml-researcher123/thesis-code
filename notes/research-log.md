@@ -516,3 +516,47 @@ a hard closed-form. And turned C3 from a curve into a concrete intervention: on 
 shared budget from the deployed big-retrieval/tiny-compression corner to the interior optimum buys
 +0.032 F1 (1.5B) / +0.035 (7B) at the same token cost. Left the C4-as-analysis and ρ≈0 framing alone
 since they were already fine and page budget is tight. Paper still compiles at 8pp main text.
+
+## 2026-07-07 — E5d lands: a real trained soft-compressor confirms the wall (closes the biggest reviewer ask)
+
+The user's reviewer-proofing feedback named this as the single highest-leverage fix: don't just show
+the compression wall with a light probe, show it in an actual TRAINED gist/xRAG-style compressor.
+Getting there took a genuine debugging saga, worth recording honestly since multiple sessions
+(mine and at least one other running in parallel) each found and fixed a different layer of the
+same underlying problem:
+
+1. My first attempt: fixed the write-projector/read-head training recipe itself (separate LR groups
+   for the from-scratch heads vs the LoRA adapter, cosine decay, grad clipping) — this is what
+   actually broke F11's chance plateau. A 4-cell canary confirmed it: n_f=4 reached 0.44-0.45 acc
+   (vs chance 0.125), n_f=16 stayed pinned at chance with training loss converged to ln(8) — a real
+   information ceiling, not underfitting. Queued the full grid.
+2. Both my canary and the full-grid run then hit a live PEFT bug: Kaggle's preinstalled torchao
+   (0.10.0) is incompatible with a version check PEFT added, raising ImportError the moment LoRA
+   tries to wrap a Linear layer. I added an uninstall-if-incompatible guard, but it silently didn't
+   work — a live `pip uninstall` doesn't retroactively invalidate the SAME process's already-primed
+   importlib.metadata cache, so peft's own check still saw the "old" version. Fixed with
+   importlib.invalidate_caches() right after the uninstall.
+3. In parallel, another session (or an earlier instance of me — genuinely not certain which) had
+   independently gone a different route: isolating each (n_f, m, seed) trial in its own subprocess,
+   which ALSO fixes the torchao issue for free (a fresh interpreter never primes the stale cache in
+   the first place) and is honestly the more robust fix of the two.
+4. That isolation wrapper introduced its own bug: it wasn't capturing the worker subprocess's
+   stdout/stderr, so any OTHER failure showed only an opaque "isolated trial failed (1)" with no
+   traceback — the real error was going straight to Kaggle's live console, invisible to us after
+   the fact. Fixed by adding capture_output=True and logging the tail before raising.
+5. That capture then surfaced a real, simple bug: the worker was passing `log` twice to
+   fit_real_compression (once via **kwargs, once explicitly) — a duplicate-keyword TypeError.
+   Another session fixed this one.
+
+After all five fixes landed, the full grid (n_f∈{2,4,8,16} × m∈{1,2,4,8}, 2 seeds, 2000 steps)
+completed cleanly in ~2.3 hours. Result: F23, and it's clean — critical m* grows 2→8→8→none across
+n_f=2,4,8,16, the single-token recall curve (0.54,0.44,0.35,0.22) closely tracks the probe's earlier
+shape, and n_f=16 never escapes chance with the training loss pinned at the uniform-guess entropy.
+This is genuinely stronger evidence than the probe alone or the literature citation (Belikova et
+al.'s xRAG-overflow) — our own trained compressor shows the exact wall the theory predicts.
+
+Folded into the paper: rewrote the compression-wall paragraph (section 4) to lead with this result,
+added it as a third panel to the C1 figure, added an appendix row, corrected F11's now-outdated
+"sits at chance" framing (F23 supersedes the negative half of it), and updated findings.md.
+Also updated the reviewer-proofing note: BOTH high-leverage asks from that feedback are now done
+(budget-abstraction defense with alpha-sensitivity, and the trained-compressor result).
