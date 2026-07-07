@@ -53,11 +53,21 @@ def _cos_topk(q_full, d_full, d, k):
 class Reader:
     """Frozen decoder-only LLM used only for generation (no training)."""
 
-    def __init__(self, model_name, device, log, load_in_4bit=False):
+    def __init__(self, model_name, device, log, load_in_4bit=False, download_timeout_s=420):
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
         self.torch = torch
-        self.tok = AutoTokenizer.from_pretrained(model_name)
+        # Resolve the reader snapshot with a HARD TIMEOUT before loading. Unauthenticated HF Hub
+        # downloads have repeatedly stalled this pipeline forever at the first weight shard (0%
+        # CPU/GPU, stuck on "Materializing param=model.embed_tokens.weight"); this fails fast with
+        # an actionable message (set HF_TOKEN / mount the model) instead of hanging the whole run.
+        import os
+        os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "20")
+        os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "120")
+        from ..compression.soft_prompt import default_hf_cache_dir, resolve_model_snapshot
+        src = resolve_model_snapshot(model_name, default_hf_cache_dir(), log=log,
+                                     timeout_s=download_timeout_s)
+        self.tok = AutoTokenizer.from_pretrained(src)
         if self.tok.pad_token is None:
             self.tok.pad_token = self.tok.eos_token
         self.tok.padding_side = "left"
@@ -73,10 +83,10 @@ class Reader:
                                       bnb_4bit_compute_dtype=torch.float16,
                                       bnb_4bit_use_double_quant=True)
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_name, quantization_config=qcfg, device_map={"": device.index or 0})
+                src, quantization_config=qcfg, device_map={"": device.index or 0})
             self.model.eval()
         else:
-            self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
+            self.model = AutoModelForCausalLM.from_pretrained(src, torch_dtype=dtype)
             self.model.to(device).eval()
         self.device = device
         log(f"  reader loaded: {model_name} (4bit={load_in_4bit and device.type=='cuda'})")
