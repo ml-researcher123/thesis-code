@@ -34,6 +34,7 @@ def _worker_main(job_path: str) -> int:
         job = json.load(fh)
     kwargs = job["kwargs"]
     log_stdout = kwargs.pop("log_stdout", False)
+    kwargs.pop("log", None)
     r = fit_real_compression(**kwargs, log=print if log_stdout else None)
     with open(job["out_path"], "w", encoding="utf-8") as fh:
         json.dump(result_to_dict(r), fh)
