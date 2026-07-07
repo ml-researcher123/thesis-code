@@ -97,3 +97,22 @@ ImportError: Found an incompatible version of torchao. Found version 0.10.0, but
     raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
 RuntimeError: isolated trial failed (1): nf2_m1_seed0
 
+[     0.0s] === run 'e5d_trained_wall' ===
+[     0.0s] host=362ac5f23893 python=3.12.13 config=/kaggle/working/repo/configs/e5d_trained_wall.yaml
+[     0.2s] device=cuda seed=0
+[     5.5s] E5 real compression wall | model=Qwen/Qwen2.5-0.5B n_f=[2, 4, 8, 16] m=[1, 2, 4, 8] V=8 seeds=[0, 1] device=cuda
+[     5.5s]     resolving HF snapshot for Qwen/Qwen2.5-0.5B cache=/kaggle/working/hf_cache_e5 timeout=300s
+[     9.2s]     resolved HF snapshot: /kaggle/working/hf_cache_e5/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987
+[     9.2s]     isolated trial start nf2_m1_seed0 timeout=900s
+[    11.7s] !! FAILED: isolated trial failed (1): nf2_m1_seed0
+[    11.7s] Traceback (most recent call last):
+  File "/kaggle/working/repo/kaggle/run.py", line 85, in main
+    results, summary = run_fn(ctx)
+                       ^^^^^^^^^^^
+  File "/kaggle/working/repo/src/experiments/e5_real_compression_wall.py", line 125, in run
+    rec = fit_real_compression_isolated(ctx, worker_kwargs, trial_timeout_s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/repo/src/experiments/e5_real_compression_wall.py", line 64, in fit_real_compression_isolated
+    raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
+RuntimeError: isolated trial failed (1): nf2_m1_seed0
+
