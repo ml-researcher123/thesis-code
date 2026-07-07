@@ -2,33 +2,9 @@ Traceback (most recent call last):
   File "/kaggle/working/repo/kaggle/run.py", line 85, in main
     results, summary = run_fn(ctx)
                        ^^^^^^^^^^^
-  File "/kaggle/working/repo/src/experiments/e5_real_compression_wall.py", line 60, in run
-    r = fit_real_compression(
-        ^^^^^^^^^^^^^^^^^^^^^
-  File "/kaggle/working/repo/src/compression/soft_prompt.py", line 109, in fit_real_compression
-    model = get_peft_model(model, lcfg)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/mapping_func.py", line 122, in get_peft_model
-    return MODEL_TYPE_TO_PEFT_MODEL_MAPPING[peft_config.task_type](
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/peft_model.py", line 3089, in __init__
-    super().__init__(model, peft_config, adapter_name, **kwargs)
-  File "/usr/local/lib/python3.12/dist-packages/peft/peft_model.py", line 129, in __init__
-    self.base_model = cls(model, {adapter_name: peft_config}, adapter_name)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/tuners/tuners_utils.py", line 315, in __init__
-    self.inject_adapter(self.model, adapter_name, low_cpu_mem_usage=low_cpu_mem_usage, state_dict=state_dict)
-  File "/usr/local/lib/python3.12/dist-packages/peft/tuners/tuners_utils.py", line 913, in inject_adapter
-    self._create_and_replace(
-  File "/usr/local/lib/python3.12/dist-packages/peft/tuners/lora/model.py", line 269, in _create_and_replace
-    new_module = self._create_new_module(lora_config, adapter_name, target, device_map=device_map, **kwargs)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/tuners/lora/model.py", line 418, in _create_new_module
-    new_module = dispatcher(target, adapter_name, config=lora_config, **kwargs)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/tuners/lora/torchao.py", line 142, in dispatch_torchao
-    if not is_torchao_available():
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/peft/import_utils.py", line 143, in is_torchao_available
-    raise ImportError(
-ImportError: Found an incompatible version of torchao. Found version 0.10.0, but only versions above 0.16.0 are supported
+  File "/kaggle/working/repo/src/experiments/e5_real_compression_wall.py", line 125, in run
+    rec = fit_real_compression_isolated(ctx, worker_kwargs, trial_timeout_s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/repo/src/experiments/e5_real_compression_wall.py", line 64, in fit_real_compression_isolated
+    raise RuntimeError(f"isolated trial failed ({res.returncode}): {stem}")
+RuntimeError: isolated trial failed (1): nf2_m1_seed0
