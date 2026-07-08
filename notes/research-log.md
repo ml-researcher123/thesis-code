@@ -560,3 +560,25 @@ added it as a third panel to the C1 figure, added an appendix row, corrected F11
 "sits at chance" framing (F23 supersedes the negative half of it), and updated findings.md.
 Also updated the reviewer-proofing note: BOTH high-leverage asks from that feedback are now done
 (budget-abstraction defense with alpha-sensitivity, and the trained-compressor result).
+
+## 2026-07-08 — E10: the positive result holds on SINGLE-HOP too (closes the "multi-hop artifact" opening)
+
+The last Tier-1 breadth move the user flagged: the interior optimum + compounding gap lived only on
+multi-hop Wikipedia QA (HotpotQA, 2Wiki), so a reviewer could ask if it's a multi-hop artifact.
+Extended to single-hop with SQuAD v1.1 (my judgement call over NQ/FEVER: single-hop is the exact
+axis in question, span answers give the SAME EM/F1 metric so numbers sit alongside E9b/E9d, and it
+fits the pipeline with a clean single-gold retrieval; NQ needs the 5.9M-passage KILT corpus, FEVER's
+label answer makes EM/F1 degenerate). Added a SQuAD loader path (dedupe contexts into a pooled
+~1500-paragraph corpus decoupled from n_q, paragraph-unique titles for single-hop gold matching,
+lightweight sentence split). Verified locally (1.00 answer-in-gold rate). Hit the recurring HF
+reader-download stall on seed1 (unauthenticated HF, 0% util at "Materializing param=embed_tokens");
+ported the E5 timeout-guarded snapshot resolver to the E9/E10 Reader so future runs fail fast
+instead of hanging.
+
+Result (3 seeds): the effect HOLDS on single-hop. B=128 gap +0.055±0.025 F1 (per-seed
+0.079/0.067/0.020), comparable to the multi-hop datasets (+0.048 each); interior optimum single-
+peaked at both budgets. The positive result now spans single-hop + multi-hop, 3 datasets, 3 seeds
+each, same metric — as thorough a breadth statement as this capstone can carry. Honest correction:
+the seed0 pilot showed +0.079 (which I initially flagged as "larger than multi-hop"), but the
+3-seed mean is +0.055 — comparable, not larger; reported as comparable (F24). Folded into the paper
+(section 6 task-general clause + E10 appendix row), F24, still 8pp.

@@ -398,13 +398,14 @@ F1 and the interior optimum holds at every scale---it does not vanish or reverse
 capability. This is the signature of an \emph{information} bottleneck rather than a reasoning one---a
 more capable reader extracts more from good context, so the penalty for the evidence the two stages
 discard persists (and at the looser budget grows: $0.009{\to}0.036{\to}0.027$), unlike a
-context-cleanup heuristic whose benefit a stronger reader absorbs. It is also
-dataset-general: on a second multi-hop benchmark (2WikiMultihopQA, three seeds) the tight-budget
-gap is $0.048\pm0.014$ F1 with the same single-peaked interior optimum.
+context-cleanup heuristic whose benefit a stronger reader absorbs. It is also dataset- and
+task-general (three seeds each): the tight-budget gap is $0.048\pm0.014$ F1 on a second multi-hop
+benchmark (2WikiMultihopQA) and a comparable $0.055\pm0.025$ on a \emph{single-hop} task (SQuAD),
+both with the same interior optimum---so it is not an artifact of multi-hop composition.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.92\linewidth]{figures/e9_real_qa.pdf}
+\includegraphics[width=0.82\linewidth]{figures/e9_real_qa.pdf}
 \caption{\textbf{C2--C3 on real multi-hop QA} (HotpotQA, \texttt{Qwen2.5-1.5B} reader, EM/F1, three
 seeds). End-to-end F1 versus the retrieval share of a fixed budget. The curve is single-peaked with
 an interior optimum (red), and past it more retrieval budget hurts (it starves compression). The
@@ -444,9 +445,9 @@ core (C1--C3) from an overclaim.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.45\linewidth]{figures/c4_facetlens_escape.png}
+\includegraphics[width=0.42\linewidth]{figures/c4_facetlens_escape.png}
 \hfill
-\includegraphics[width=0.45\linewidth]{figures/c4b_real_facetlens.png}
+\includegraphics[width=0.42\linewidth]{figures/c4b_real_facetlens.png}
 \caption{\textbf{C4 and its scope.} Left (free vectors): routed facet-lenses escape the wall at
 half the budget of a single vector, while generic multiview is worse than single. Right (frozen
 real encoder): the escape vanishes---a single learned projection ties the routed lenses and leads
@@ -538,6 +539,7 @@ E6 & real & mxbai; one corpus; $N{=}2000$ & gap $0.392$ at $B{=}128$; optimum in
 E9 & real & HotpotQA; Qwen2.5-1.5B; EM/F1; 3 seeds & interior optimum; gap $0.048{\pm}0.007$ F1 at $B{=}128$, null at $256$\\
 E9c/E9e & real & HotpotQA; Qwen2.5-\textbf{3B/7B}; 3 seeds & reader-robust: $B{=}128$ gap $0.058/0.058$ (flat over 1.5B/3B/7B, no reversal)\\
 E9d & real & \textbf{2Wiki}; Qwen2.5-1.5B; 3 seeds & cross-dataset: gap $0.048{\pm}0.014$ at $B{=}128$; same interior optimum\\
+E10 & real & \textbf{SQuAD} (single-hop); Qwen2.5-1.5B; 3 seeds & task-general: gap $0.055{\pm}0.025$ at $B{=}128$; interior optimum; not a multi-hop artifact\\
 C4 & free & facet pattern; single / multiview / routed & routed $\dr^\star{=}12$ vs single $24$; multiview $48$\\
 C4b & real & frozen mxbai; 10 facets; learned lenses & single ties routed ($\dr^\star{=}40$); no transfer\\
 \bottomrule
