@@ -28,7 +28,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ace_rag.context_quality import aggregate_context_quality, context_quality
+from ace_rag.context_quality import (
+    aggregate_context_quality,
+    context_quality,
+    context_text,
+    score_nli_entailment,
+)
 from ace_rag.datasets import load_dataset
 from ace_rag.evidence_packer import pack_mmr_run, pack_submodular_run
 from ace_rag.generator import ExtractiveGenerator, HuggingFaceGenerator
@@ -96,6 +101,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--submod-sat-alpha", type=float, default=0.3)
     parser.add_argument("--submod-cost-power", type=float, default=1.0)
     parser.add_argument("--submod-max-candidates", type=int, default=160)
+    parser.add_argument("--semantic-aic", action="store_true",
+                        help="Also score an NLI-entailment answer-in-context variant. Runs after "
+                             "the reader is freed, so it costs memory only briefly. Needed to "
+                             "reclaim long free-form datasets (ExpertQA) where the verbatim-span "
+                             "diagnostic is degenerate.")
+    parser.add_argument("--nli-model", default="cross-encoder/nli-deberta-v3-small")
+    parser.add_argument("--nli-batch-size", type=int, default=32)
     parser.add_argument("--out-dir", default="cloud_results")
     return parser.parse_args()
 
@@ -206,6 +218,19 @@ def generate(reader: Any, backend: str, reader_runs: list[RetrievalRun]) -> list
     return [reader.answer(run.query, run) for run in reader_runs]
 
 
+def nli_hypothesis(answer: str) -> str:
+    """Render a gold answer as an NLI hypothesis.
+
+    Short spans ("Paris") are not propositions, so they are wrapped into a
+    claim the premise can entail. Long free-form answers (ExpertQA) already are
+    claims and are used verbatim.
+    """
+    answer = answer.strip()
+    if len(answer.split()) <= 8:
+        return f"The answer is {answer}."
+    return answer
+
+
 def base_question_metrics(runs: list[RetrievalRun], dataset: CorpusDataset) -> dict[str, tuple[float, float]]:
     by_qid = {q.qid: q for q in dataset.questions}
     out: dict[str, tuple[float, float]] = {}
@@ -279,6 +304,9 @@ def main() -> None:
     candidate_outputs: dict[str, dict[str, Any]] = {}
     rows: list[dict[str, Any]] = []
     per_question_rows: list[dict[str, Any]] = []
+    # (row index, premise, hypothesis) collected during the policy loop and
+    # scored in one batched pass after the reader is freed.
+    nli_jobs: list[tuple[int, str, str]] = []
 
     for policy in policies:
         name = policy["name"]
@@ -313,6 +341,8 @@ def main() -> None:
             q = by_qid[run.qid]
             cq = context_quality(run, q)
             base_recall, base_all_gold = base_metrics_by_rep[rep].get(run.qid, (0.0, 0.0))
+            if args.semantic_aic and q.answers:
+                nli_jobs.append((len(per_question_rows), context_text(run), nli_hypothesis(q.answers[0])))
             per_question_rows.append(
                 {
                     "qid": run.qid,
@@ -322,6 +352,7 @@ def main() -> None:
                     "em": exact_match(pred, q.answers),
                     "f1": round(token_f1(pred, q.answers), 4),
                     "ans_in_context": cq["ans_in_context"],
+                    "ans_in_context_soft": cq["ans_in_context_soft"],
                     "gold_token_density": round(cq["gold_token_density"], 4),
                     "gold_doc_reader_cov": round(cq["gold_doc_reader_cov"], 4),
                     "context_tokens": cq["context_tokens"],
@@ -366,6 +397,36 @@ def main() -> None:
     oracle_row.update(agg)
     rows.append(oracle_row)
     print("[density] " + ", ".join(f"{k}={v}" for k, v in oracle_row.items()), flush=True)
+
+    # Semantic answer-in-context. Deferred to here so the reader is out of the
+    # way before the NLI cross-encoder is loaded; both never sit on the GPU at
+    # once, which matters on the 2xT4 box when the reader is 7B+.
+    if args.semantic_aic and nli_jobs:
+        print(f"[density] freeing reader before NLI ({len(nli_jobs)} pairs)", flush=True)
+        try:
+            del reader
+        except NameError:
+            pass
+        cleanup_cuda()
+        nli_scores = score_nli_entailment(
+            [(premise, hypothesis) for _, premise, hypothesis in nli_jobs],
+            model_name=args.nli_model,
+            batch_size=args.nli_batch_size,
+            device=args.reader_device,
+        )
+        for (row_idx, _, _), score in zip(nli_jobs, nli_scores):
+            per_question_rows[row_idx]["ans_in_context_nli"] = round(float(score), 4)
+        # Fold policy-level means back into the metrics table so the summary CSV
+        # carries the semantic variant alongside the verbatim one.
+        by_policy: dict[str, list[float]] = {}
+        for row in per_question_rows:
+            if "ans_in_context_nli" in row:
+                by_policy.setdefault(row["policy"], []).append(row["ans_in_context_nli"])
+        for row in rows:
+            scores = by_policy.get(row.get("policy"))
+            if scores:
+                row["mean_ans_in_context_nli"] = round(sum(scores) / len(scores), 4)
+        cleanup_cuda()
 
     tag = f"{args.dataset}_density_{args.ace_retriever}_budget{args.budget}_limit{args.limit}"
     metrics_path = out_dir / f"{tag}_metrics.csv"

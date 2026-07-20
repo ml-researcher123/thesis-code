@@ -1,4 +1,4 @@
-"""Current Kaggle control job: Stage-11 HotpotQA reader-scale ladder (14B + 7B-4bit bridge).
+"""Kaggle control job: post-arXiv strengthening runs (Stages 12-16).
 
 This file lives in the GitHub repo under control/main.py. Kaggle's github loop
 runs it whenever this file changes.
@@ -7,35 +7,55 @@ Design note (how new methodology reaches Kaggle):
   The Kaggle reader does NOT run code straight from GitHub. It extracts a frozen
   project zip (ace_rag_research_kaggle_ready_v13_analysis.zip) uploaded as a
   Kaggle input, then this control script OVERLAYS the *.py files under
-  control/overlay/ (the submodular packer, density diagnostics, the Stage-4
-  runner, and the device_map / load_in_4bit reader loader) onto the extracted
-  project before running. The overlay is additive.
+  control/overlay/ onto the extracted project before running. The overlay is
+  additive, so new diagnostics (e.g. the semantic answer-in-context variant in
+  ace_rag/context_quality.py) ship without re-uploading the zip.
 
-Stage-11 extends the reader-scale axis (§6.5) from a single 7B point into a
-LADDER: Qwen2.5 at 3B (done, §5), 7B (done fp16, Stage-9), and now 14B, plus a
-7B-4bit quantization control. The goal is to trace exactly how the packer's edge
-over the focused heuristic is absorbed as the reader grows, and to confirm the
-trend is a SCALE effect, not a quantization artifact:
+------------------------------------------------------------------------------
+HOW TO USE: set STAGE below to one phase, commit, push. The loop picks up the
+change and runs it. Every job is skip-guarded on an existing *metrics.csv, so a
+stage is resumable across Kaggle's 9-hour session limit -- re-pushing the same
+STAGE resumes rather than restarts.
+------------------------------------------------------------------------------
 
-  - 7B-4bit bridge: same model/data/seeds as the Stage-9 7B-fp16 run, changing
-    ONLY precision. If the submod-vs-focused contrast looks like 7B-fp16, then
-    4-bit quantization (required to fit 14B/32B on the 2xT4 box) is not driving
-    the ladder.
-  - 14B-4bit: the next rung. 14B nf4 (~8 GB) fits the box; device_map="auto"
-    shards if needed.
+Stage plan (ordered by how much each lifts the paper):
 
-32B is run separately (Stage-12, likely single-seed) because it is much slower
-on Turing T4s (no native int4) and may not finish a full factorial in one
-session. Per-seed skip-logic (checks for an existing *metrics.csv) makes every
-run resumable across Kaggle's 9-hour session limit.
+  stage12-cross-family   [RUN FIRST] The headline packer win currently rests on
+                         a single reader family (Qwen2.5-3B). Replicates the
+                         budget-160 HotpotQA factorial on Llama-3.2-3B and
+                         Phi-3.5-mini, 3 seeds each. If +0.022 holds across
+                         families, the positive claim stops being "a Qwen
+                         quirk" and becomes cross-family.
 
-Everything except the reader matches the §5 HotpotQA factorial exactly
-(top-k 5 / nodes 48 / expand 5, budget 160, seeds {42,13}) so the contrasts are
-directly comparable across rungs.
+  stage13-multiseed      Every current positive is 3-seed but the budget sweep
+                         (96/128/224) and the MuSiQue runs are single-seed, so
+                         the inverted-U rests on single points. Pure compute;
+                         removes the easiest reviewer objection in the paper.
+
+  stage14-2wiki-budget   Searches for a SECOND dataset where the packer wins.
+                         2Wiki cleared the retrieval bar (all-gold@5=0.43) but
+                         was null at budget 160. Sweeps tighter/looser budgets
+                         to find a regime where all four scope conditions hold.
+
+  stage15-semantic-aic   The diagnostic is span-based, so it is degenerate on
+                         long free-form answers (ExpertQA). Scores the new NLI
+                         entailment variant alongside the verbatim one, to show
+                         (a) they agree where spans exist and (b) the semantic
+                         version reclaims ExpertQA.
+
+  stage16-32b            One more reader-scale rung. The 14B reversal is
+                         currently a two-point story; 32B either confirms the
+                         monotone "curation stops paying, then costs"
+                         trajectory or shows it plateaus.
+
+Everything except the varied axis matches the paper's HotpotQA factorial
+exactly (top-k 5 / nodes 48 / expand 5, budget 160) so contrasts stay
+comparable to the published numbers.
 """
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -44,27 +64,66 @@ import zipfile
 from pathlib import Path
 
 
+# ===========================================================================
+# SELECT THE PHASE TO RUN
+# ===========================================================================
+STAGE = "stage12-cross-family"
+# ===========================================================================
+
+
 INPUT_ROOT = Path("/kaggle/input")
 WORKING_ROOT = Path("/kaggle/working")
 WORK_ROOT = WORKING_ROOT / "ace_rag_research_v13_analysis"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-JOB_VERSION = "stage11-hotpotqa-reader-ladder-14b-v1"
+JOB_VERSION = f"{STAGE}-v1"
 
-HOTPOT_BUDGET = 160
-HOTPOT_LIMIT = 500
-HOTPOT_SEEDS = [42, 13]
-HOTPOT_TOP_K = 5
-HOTPOT_TOP_K_NODES = 48
-HOTPOT_MAX_EXPANDED = 5
+# --- shared factorial settings (identical to the published HotpotQA run) ---
+BUDGET = 160
+LIMIT = 500
+TOP_K = 5
+TOP_K_NODES = 48
+MAX_EXPANDED = 5
+SEEDS_3 = [42, 13, 7]
 
-# Ladder rungs run in this order: the cheaper 7B-4bit bridge first (so the
-# quantization control lands even if the session runs short), then 14B-4bit.
-# (label, model, reader_batch_size)
-LADDER_RUNGS = [
-    ("reader7b_4bit", "Qwen/Qwen2.5-7B-Instruct", 2),
-    ("reader14b_4bit", "Qwen/Qwen2.5-14B-Instruct", 1),
+# --- stage 12: cross-family reader replication -----------------------------
+# Two non-Qwen families at the same ~3B scale as the headline result, fp16
+# (3B-class fits a single T4, so this matches the published 3B fp16 setup
+# exactly and no quantization control is needed).
+# (label, model, batch_size, gated)
+CROSS_FAMILY_READERS = [
+    ("llama3b", "meta-llama/Llama-3.2-3B-Instruct", 2, True),
+    ("phi35mini", "microsoft/Phi-3.5-mini-instruct", 2, False),
 ]
+
+# --- stage 13: multi-seed the single-seed sweeps ---------------------------
+SWEEP_BUDGETS = [96, 128, 224]
+SWEEP_SEEDS = [13, 7]          # seed 42 already published
+MUSIQUE_SEEDS = [13, 7]        # seed 42 already published
+
+# --- stage 14: 2Wiki win-regime search -------------------------------------
+# Budget 160 is already 3-seed and null. Tighter budgets make complementarity
+# matter more; 224 is the loose control.
+TWO_WIKI_BUDGETS = [96, 128, 224]
+TWO_WIKI_SEEDS = [42, 13]
+TWO_WIKI_LIMIT = 500
+
+# --- stage 15: semantic answer-in-context ----------------------------------
+# ExpertQA is the target (span diagnostic degenerate there); CovidQA and
+# HotpotQA give the agreement check where spans DO exist.
+# NOTE: RAGBench must use --split test.
+SEMANTIC_TARGETS = [
+    ("expertqa", "ragbench", "expertqa", "test"),
+    ("covidqa", "ragbench", "covidqa", "test"),
+    ("hotpotqa", "hotpotqa", None, "validation"),
+]
+NLI_MODEL = "cross-encoder/nli-deberta-v3-small"
+
+# --- stage 16: 32B rung ----------------------------------------------------
+# 32B nf4 (~18GB) needs both T4s via device_map=auto and is slow on Turing
+# (no native int4), so single-seed by design.
+READER_32B = "Qwen/Qwen2.5-32B-Instruct"
+SEEDS_32B = [42]
 
 
 def log(message: str) -> None:
@@ -92,6 +151,36 @@ def run(cmd: list[str], cwd: Path | None = None, timeout: int | None = None, che
     if check and code != 0:
         raise RuntimeError(f"command failed with code {code}: {' '.join(cmd)}")
     return code
+
+
+def get_secret(name: str) -> str | None:
+    """Env var first, then Kaggle secrets (env lets a notebook cell override)."""
+    value = os.environ.get(name)
+    if value:
+        return value
+    try:
+        from kaggle_secrets import UserSecretsClient
+
+        return UserSecretsClient().get_secret(name)
+    except Exception:
+        return None
+
+
+def setup_hf_auth() -> bool:
+    """Export a Hugging Face token if one is available.
+
+    Llama-3.2 is gated: without an accepted licence + token the download 401s.
+    Returns whether a token was found so gated models can be skipped cleanly
+    rather than burning a session on a guaranteed failure.
+    """
+    token = get_secret("HF_TOKEN") or get_secret("HUGGINGFACE_TOKEN")
+    if not token:
+        log("[hf] no HF_TOKEN found; gated models (Llama) will be skipped")
+        return False
+    os.environ["HF_TOKEN"] = token
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = token
+    log("[hf] token configured for gated model access")
+    return True
 
 
 def find_project_zip() -> Path:
@@ -124,6 +213,73 @@ def find_extracted_project() -> Path | None:
     return candidates[0]
 
 
+def find_2wiki_file() -> Path:
+    """Locate a mounted 2WikiMultiHopQA dev split (.json/.jsonl) under /kaggle/input."""
+    cands: list[Path] = []
+    for path in INPUT_ROOT.rglob("*.json*"):
+        if not path.is_file() or path.suffix.lower() not in (".json", ".jsonl"):
+            continue
+        sp = str(path).lower()
+        has_2wiki = ("2wiki" in sp) or ("wikimultihop" in sp) or ("2_wiki" in sp)
+        has_split = ("dev" in sp) or ("valid" in sp)
+        if has_2wiki and has_split:
+            cands.append(path)
+    cands = sorted(set(cands), key=lambda p: (len(str(p)), str(p)))
+    if not cands:
+        raise FileNotFoundError(
+            "No 2WikiMultiHopQA dev file found. Mount the 2Wiki dev split (.json/.jsonl) "
+            "as a Kaggle input; the path must contain '2wiki'/'wikimultihop' and 'dev'/'valid'."
+        )
+    log(f"[2wiki] using {cands[0]}  ({len(cands)} candidate(s))")
+    return cands[0]
+
+
+def find_musique_jsonl() -> Path | None:
+    """Locate a MuSiQue jsonl mount under /kaggle/input (direct file or inside a zip)."""
+    direct = sorted(INPUT_ROOT.rglob("musique.jsonl"), key=lambda path: len(str(path)))
+    if direct:
+        return direct[0]
+
+    def _score(p: Path) -> tuple[int, int, int]:
+        name = p.name.lower()
+        return (
+            0 if "musique" in name else 1,
+            0 if "dev" in name else (1 if "validation" in name else 2),
+            len(str(p)),
+        )
+
+    loose = [
+        p for p in INPUT_ROOT.rglob("*.jsonl")
+        if "musique" in p.name.lower() or "musique" in str(p.parent).lower()
+    ]
+    loose.sort(key=lambda p: (0 if "ans" in p.name.lower() else 1, *_score(p)))
+    if loose:
+        log(f"[musique] using direct jsonl {loose[0]}")
+        return loose[0]
+
+    data_root = WORKING_ROOT / "data" / "raw"
+    data_root.mkdir(parents=True, exist_ok=True)
+    zip_candidates = sorted(
+        [path for path in INPUT_ROOT.rglob("*.zip") if "musique" in path.name.lower()],
+        key=lambda path: len(str(path)),
+    )
+    for zip_path in zip_candidates:
+        with zipfile.ZipFile(zip_path) as zf:
+            jsonl_names = [
+                name for name in zf.namelist()
+                if name.endswith(".jsonl") and ("dev" in name.lower() or "musique" in name.lower())
+            ]
+            if not jsonl_names:
+                continue
+            preferred = sorted(jsonl_names, key=lambda name: (0 if "dev" in name.lower() else 1, len(name)))[0]
+            out_path = data_root / "musique.jsonl"
+            with zf.open(preferred) as src, out_path.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+            log(f"Extracted MuSiQue {preferred} from {zip_path} to {out_path}")
+            return out_path
+    return None
+
+
 def prepare_project() -> None:
     if WORK_ROOT.exists():
         shutil.rmtree(WORK_ROOT)
@@ -139,8 +295,10 @@ def prepare_project() -> None:
         log(f"Extracted {project_zip} to {WORK_ROOT}")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements-cloud.txt"], cwd=WORK_ROOT, timeout=900)
     # 4-bit (nf4) loading needs bitsandbytes, which is NOT in the frozen zip's
-    # requirements. Install it explicitly; >=0.43 supports Turing (T4, sm_75).
+    # requirements. >=0.43 supports Turing (T4, sm_75).
     run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.43.0"], cwd=WORK_ROOT, timeout=600, check=False)
+    # Phi-3.5 needs a recent transformers; harmless no-op if already satisfied.
+    run([sys.executable, "-m", "pip", "install", "-q", "-U", "transformers>=4.44.0"], cwd=WORK_ROOT, timeout=600, check=False)
 
 
 def apply_overlay() -> None:
@@ -159,57 +317,209 @@ def apply_overlay() -> None:
     log(f"[overlay] applied {len(copied)} file(s) to {WORK_ROOT}: {copied}")
 
 
-def run_ladder_rung(label: str, model: str, batch_size: int, seed: int) -> bool:
-    job_name = f"stage11_density_packer_hotpotqa_{label}_budget{HOTPOT_BUDGET}_limit{HOTPOT_LIMIT}_seed{seed}"
+def factorial_cmd(
+    job_name: str,
+    *,
+    dataset: str,
+    reader_model: str,
+    budget: int,
+    seed: int,
+    limit: int = LIMIT,
+    split: str = "validation",
+    ragbench_subset: str | None = None,
+    dataset_path: Path | None = None,
+    path_flag: str | None = None,
+    batch_size: int = 2,
+    load_4bit: bool = False,
+    semantic_aic: bool = False,
+) -> tuple[Path, list[str]]:
+    """Build the standard factorial command; only the varied axis differs."""
     out_dir = WORKING_ROOT / "colab_results" / job_name
-    if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
-        log(f"[skip] {job_name} already has metrics")
-        return True
-    out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "experiments.run_density_router",
-        "--dataset", "hotpotqa",
-        "--split", "validation",
-        "--limit", str(HOTPOT_LIMIT),
+        "--dataset", dataset,
+        "--limit", str(limit),
         "--seed", str(seed),
         "--ace-retriever", "standard",
-        "--top-k", str(HOTPOT_TOP_K),
-        "--top-k-nodes", str(HOTPOT_TOP_K_NODES),
-        "--max-expanded-docs", str(HOTPOT_MAX_EXPANDED),
+        "--top-k", str(TOP_K),
+        "--top-k-nodes", str(TOP_K_NODES),
+        "--max-expanded-docs", str(MAX_EXPANDED),
         "--embedder", "sentence-transformers",
         "--embedding-model", "BAAI/bge-small-en-v1.5",
         "--embed-device", "cuda",
         "--compressor", "truncate",
         "--compress-dims", "320",
         "--reader-backend", "hf",
-        "--reader-model", model,
+        "--reader-model", reader_model,
         "--reader-device", "cuda",
-        "--reader-load-4bit",            # nf4 + double-quant; auto device_map
         "--reader-batch-size", str(batch_size),
         "--mmr-lambda", "0.7",
-        "--budget", str(HOTPOT_BUDGET),
+        "--budget", str(budget),
         "--out-dir", str(out_dir),
     ]
-    return run(cmd, cwd=WORK_ROOT, timeout=28800, check=False) == 0
+    if dataset not in ("musique_local", "2wiki_local"):
+        cmd += ["--split", split]
+    if ragbench_subset:
+        cmd += ["--ragbench-subset", ragbench_subset]
+    if dataset_path is not None and path_flag:
+        cmd += [path_flag, str(dataset_path)]
+    if load_4bit:
+        cmd += ["--reader-load-4bit"]
+    if semantic_aic:
+        cmd += ["--semantic-aic", "--nli-model", NLI_MODEL, "--nli-batch-size", "32"]
+    return out_dir, cmd
 
 
-def main() -> None:
-    log(f"=== control/main.py: Stage-11 HotpotQA reader-scale ladder ({JOB_VERSION}) ===")
-    log(f"--- rungs={[r[0] for r in LADDER_RUNGS]} budget={HOTPOT_BUDGET} limit={HOTPOT_LIMIT} seeds={HOTPOT_SEEDS} ---")
-    prepare_project()
-    apply_overlay()
+def execute(job_name: str, out_dir: Path, cmd: list[str], timeout: int = 28800) -> bool:
+    if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
+        log(f"[skip] {job_name} already has metrics")
+        return True
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return run(cmd, cwd=WORK_ROOT, timeout=timeout, check=False) == 0
+
+
+# ---------------------------------------------------------------------------
+# Stages
+# ---------------------------------------------------------------------------
+
+def run_stage12_cross_family() -> dict[str, bool]:
+    """Tier 1: replicate the HotpotQA headline on two non-Qwen reader families."""
+    has_token = setup_hf_auth()
     results: dict[str, bool] = {}
-    for label, model, batch_size in LADDER_RUNGS:
-        for seed in HOTPOT_SEEDS:
-            log(f"--- ladder {label} ({model}) seed {seed} ---")
+    for label, model, batch_size, gated in CROSS_FAMILY_READERS:
+        if gated and not has_token:
+            log(f"[skip] {label} ({model}) is gated and no HF_TOKEN is set")
+            results[label] = False
+            continue
+        for seed in SEEDS_3:
+            job = f"stage12_crossfamily_hotpotqa_{label}_budget{BUDGET}_limit{LIMIT}_seed{seed}"
+            log(f"--- cross-family {label} ({model}) seed {seed} ---")
+            out_dir, cmd = factorial_cmd(
+                job, dataset="hotpotqa", reader_model=model,
+                budget=BUDGET, seed=seed, batch_size=batch_size,
+            )
             try:
-                results[f"{label}_seed{seed}"] = run_ladder_rung(label, model, batch_size, seed)
+                results[f"{label}_seed{seed}"] = execute(job, out_dir, cmd)
             except Exception as exc:
                 log(f"[error] {label} seed {seed} raised {exc!r}")
                 results[f"{label}_seed{seed}"] = False
-    ok = [s for s, good in results.items() if good]
-    bad = [s for s, good in results.items() if not good]
-    log(f"=== control/main.py done: stage11 reader ladder; ok={ok} failed={bad} ===")
+    return results
+
+
+def run_stage13_multiseed() -> dict[str, bool]:
+    """Tier 2: bring the budget sweep and MuSiQue up to three seeds."""
+    results: dict[str, bool] = {}
+    for budget in SWEEP_BUDGETS:
+        for seed in SWEEP_SEEDS:
+            job = f"stage13_budgetsweep_hotpotqa_qwen3b_budget{budget}_limit{LIMIT}_seed{seed}"
+            log(f"--- budget sweep B={budget} seed {seed} ---")
+            out_dir, cmd = factorial_cmd(
+                job, dataset="hotpotqa", reader_model="Qwen/Qwen2.5-3B-Instruct",
+                budget=budget, seed=seed,
+            )
+            try:
+                results[f"budget{budget}_seed{seed}"] = execute(job, out_dir, cmd)
+            except Exception as exc:
+                log(f"[error] budget {budget} seed {seed} raised {exc!r}")
+                results[f"budget{budget}_seed{seed}"] = False
+
+    musique = find_musique_jsonl()
+    if musique is None:
+        log("[musique] no jsonl mounted; skipping MuSiQue multi-seed")
+        return results
+    for seed in MUSIQUE_SEEDS:
+        job = f"stage13_musique_qwen3b_budget{BUDGET}_limit{LIMIT}_seed{seed}"
+        log(f"--- musique seed {seed} ---")
+        out_dir, cmd = factorial_cmd(
+            job, dataset="musique_local", reader_model="Qwen/Qwen2.5-3B-Instruct",
+            budget=BUDGET, seed=seed, dataset_path=musique, path_flag="--musique-path",
+        )
+        try:
+            results[f"musique_seed{seed}"] = execute(job, out_dir, cmd)
+        except Exception as exc:
+            log(f"[error] musique seed {seed} raised {exc!r}")
+            results[f"musique_seed{seed}"] = False
+    return results
+
+
+def run_stage14_2wiki_budget() -> dict[str, bool]:
+    """Tier 1: hunt for a second dataset where the packer wins."""
+    twowiki = find_2wiki_file()
+    results: dict[str, bool] = {}
+    for budget in TWO_WIKI_BUDGETS:
+        for seed in TWO_WIKI_SEEDS:
+            job = f"stage14_2wiki_qwen3b_budget{budget}_limit{TWO_WIKI_LIMIT}_seed{seed}"
+            log(f"--- 2wiki B={budget} seed {seed} ---")
+            out_dir, cmd = factorial_cmd(
+                job, dataset="2wiki_local", reader_model="Qwen/Qwen2.5-3B-Instruct",
+                budget=budget, seed=seed, limit=TWO_WIKI_LIMIT,
+                dataset_path=twowiki, path_flag="--twowiki-path",
+            )
+            try:
+                results[f"2wiki_b{budget}_seed{seed}"] = execute(job, out_dir, cmd)
+            except Exception as exc:
+                log(f"[error] 2wiki budget {budget} seed {seed} raised {exc!r}")
+                results[f"2wiki_b{budget}_seed{seed}"] = False
+    return results
+
+
+def run_stage15_semantic_aic() -> dict[str, bool]:
+    """Tier 1: score the NLI answer-in-context variant, reclaiming ExpertQA."""
+    results: dict[str, bool] = {}
+    for label, dataset, subset, split in SEMANTIC_TARGETS:
+        for seed in SEEDS_3[:2]:  # 42, 13 -- enough for a correlation estimate
+            job = f"stage15_semanticaic_{label}_qwen3b_budget{BUDGET}_seed{seed}"
+            log(f"--- semantic AiC {label} seed {seed} ---")
+            out_dir, cmd = factorial_cmd(
+                job, dataset=dataset, reader_model="Qwen/Qwen2.5-3B-Instruct",
+                budget=BUDGET, seed=seed, split=split, ragbench_subset=subset,
+                semantic_aic=True,
+            )
+            try:
+                results[f"{label}_seed{seed}"] = execute(job, out_dir, cmd)
+            except Exception as exc:
+                log(f"[error] semantic AiC {label} seed {seed} raised {exc!r}")
+                results[f"{label}_seed{seed}"] = False
+    return results
+
+
+def run_stage16_32b() -> dict[str, bool]:
+    """Tier 2: one more rung to make the reader-scale trajectory conclusive."""
+    results: dict[str, bool] = {}
+    for seed in SEEDS_32B:
+        job = f"stage16_reader32b_4bit_hotpotqa_budget{BUDGET}_limit{LIMIT}_seed{seed}"
+        log(f"--- 32B 4-bit seed {seed} ---")
+        out_dir, cmd = factorial_cmd(
+            job, dataset="hotpotqa", reader_model=READER_32B,
+            budget=BUDGET, seed=seed, batch_size=1, load_4bit=True,
+        )
+        try:
+            results[f"reader32b_seed{seed}"] = execute(job, out_dir, cmd)
+        except Exception as exc:
+            log(f"[error] 32B seed {seed} raised {exc!r}")
+            results[f"reader32b_seed{seed}"] = False
+    return results
+
+
+STAGES = {
+    "stage12-cross-family": run_stage12_cross_family,
+    "stage13-multiseed": run_stage13_multiseed,
+    "stage14-2wiki-budget": run_stage14_2wiki_budget,
+    "stage15-semantic-aic": run_stage15_semantic_aic,
+    "stage16-32b": run_stage16_32b,
+}
+
+
+def main() -> None:
+    if STAGE not in STAGES:
+        raise SystemExit(f"Unknown STAGE {STAGE!r}; pick one of {sorted(STAGES)}")
+    log(f"=== control/main.py: {STAGE} ({JOB_VERSION}) ===")
+    prepare_project()
+    apply_overlay()
+    results = STAGES[STAGE]()
+    ok = [name for name, good in results.items() if good]
+    bad = [name for name, good in results.items() if not good]
+    log(f"=== control/main.py done: {STAGE}; ok={ok} failed={bad} ===")
 
 
 if __name__ == "__main__":
