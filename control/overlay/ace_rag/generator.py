@@ -8,6 +8,29 @@ from .schema import RetrievalRun
 from .text import lexical_overlap
 
 
+def _patch_dynamic_cache_seen_tokens() -> None:
+    """Restore DynamicCache.seen_tokens for readers whose bundled remote code
+    still expects it (e.g. Phi-3.5-mini's modeling_phi3.py).
+
+    seen_tokens was deprecated in transformers 4.41 and later removed;
+    get_seq_length() is the current replacement. Pinning transformers to an
+    old-enough version to keep seen_tokens turned out to be unsatisfiable --
+    old transformers hard-requires an old tokenizers at import time, which
+    can't parse newer models' tokenizer.json (e.g. Falcon3-3B). Patching the
+    class here instead lets the environment run whatever recent,
+    mutually-compatible transformers+tokenizers versions it naturally
+    resolves to (the same combination already proven stable for Qwen2.5 in
+    Stages 8-11), while giving Phi's outdated code the attribute it wants.
+    Idempotent and a no-op on any version where seen_tokens still exists.
+    """
+    try:
+        from transformers import DynamicCache
+    except ImportError:
+        return
+    if not hasattr(DynamicCache, "seen_tokens"):
+        DynamicCache.seen_tokens = property(lambda self: self.get_seq_length())
+
+
 @dataclass
 class ExtractiveGenerator:
     """Offline reader that returns the most query-overlapping evidence sentence."""
@@ -55,6 +78,8 @@ class HuggingFaceGenerator:
     ):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        _patch_dynamic_cache_seen_tokens()
 
         self.model_name = model_name
         self.device = device

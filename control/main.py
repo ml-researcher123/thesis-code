@@ -299,28 +299,22 @@ def prepare_project() -> None:
     # 4-bit (nf4) loading needs bitsandbytes, which is NOT in the frozen zip's
     # requirements. >=0.43 supports Turing (T4, sm_75).
     run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.43.0"], cwd=WORK_ROOT, timeout=600, check=False)
-    # Phi-3.5's bundled remote code calls DynamicCache.seen_tokens, which was
-    # removed in transformers >=4.45 (crashed Stage-12's first attempt). Pin to
-    # 4.44.2: new enough for Phi-3.5 (needs >=4.43) and Qwen2.5 (>=4.37), old
-    # enough to still expose seen_tokens. An exact pin so it downgrades the
-    # Kaggle base image if that ships something newer.
-    run([sys.executable, "-m", "pip", "install", "-q", "transformers==4.44.2"], cwd=WORK_ROOT, timeout=600, check=False)
-    # The transformers pin above drags tokenizers back down with it (pip
-    # resolves it to satisfy 4.44.2's bounds), which then can't parse
-    # Falcon3-3B's tokenizer.json ("data did not match any variant of
-    # untagged enum ModelWrapper" -- a newer serialization format than the
-    # downgraded tokenizers Rust core understands). A plain `-U` here is a
-    # no-op: pip's resolver sees transformers==4.44.2 declares an upper bound
-    # on tokenizers and refuses to install past it (confirmed -- the identical
-    # error recurred with this exact line in place). --no-deps bypasses that
-    # declared-constraint check entirely and force-installs latest regardless.
-    # Safe because the stable Python API transformers 4.44.2 relies on
-    # (TokenizerFast.from_file, encode/decode) hasn't changed across
-    # tokenizers releases.
-    run([sys.executable, "-m", "pip", "install", "-q", "-U", "--no-deps", "tokenizers"], cwd=WORK_ROOT, timeout=300, check=False)
-    # Verify what actually landed, so a repeat failure is diagnosable from the
-    # log instead of guessed at a third time.
-    run([sys.executable, "-c", "import tokenizers, transformers; print(f'[versions] tokenizers={tokenizers.__version__} transformers={transformers.__version__}')"], cwd=WORK_ROOT, timeout=60, check=False)
+    # NOTE: two earlier attempts pinned transformers==4.44.2 (to keep
+    # DynamicCache.seen_tokens for Phi-3.5's outdated bundled code) then tried
+    # to force tokenizers past that pin's declared ceiling (to parse Falcon3's
+    # newer tokenizer.json format). Both failed: transformers has a hard
+    # *runtime* version guard (dependency_versions_check.py) that refuses to
+    # even import if installed tokenizers falls outside its declared range --
+    # so pinning old-transformers-plus-new-tokenizers is fundamentally
+    # unsatisfiable, not just a pip-resolver inconvenience. Confirmed via
+    # web search: seen_tokens was deprecated in 4.41 (replaced by
+    # get_seq_length()), and recent transformers (4.48+) requires
+    # tokenizers>=0.21 -- i.e. modern transformers and modern tokenizers
+    # travel together, they were never in conflict. The actual fix is to NOT
+    # pin the environment at all (this also matches the exact combination
+    # Stage 8-11 already proved stable for Qwen2.5) and instead patch the one
+    # thing that's actually broken -- Phi's removed attribute -- at the point
+    # of use. See ace_rag/generator.py's DynamicCache.seen_tokens shim.
 
 
 def apply_overlay() -> None:
