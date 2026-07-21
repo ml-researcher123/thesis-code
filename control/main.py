@@ -297,8 +297,12 @@ def prepare_project() -> None:
     # 4-bit (nf4) loading needs bitsandbytes, which is NOT in the frozen zip's
     # requirements. >=0.43 supports Turing (T4, sm_75).
     run([sys.executable, "-m", "pip", "install", "-q", "bitsandbytes>=0.43.0"], cwd=WORK_ROOT, timeout=600, check=False)
-    # Phi-3.5 needs a recent transformers; harmless no-op if already satisfied.
-    run([sys.executable, "-m", "pip", "install", "-q", "-U", "transformers>=4.44.0"], cwd=WORK_ROOT, timeout=600, check=False)
+    # Phi-3.5's bundled remote code calls DynamicCache.seen_tokens, which was
+    # removed in transformers >=4.45 (crashed Stage-12's first attempt). Pin to
+    # 4.44.2: new enough for Phi-3.5 (needs >=4.43) and Qwen2.5 (>=4.37), old
+    # enough to still expose seen_tokens. An exact pin so it downgrades the
+    # Kaggle base image if that ships something newer.
+    run([sys.executable, "-m", "pip", "install", "-q", "transformers==4.44.2"], cwd=WORK_ROOT, timeout=600, check=False)
 
 
 def apply_overlay() -> None:
