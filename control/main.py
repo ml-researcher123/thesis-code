@@ -386,9 +386,31 @@ def factorial_cmd(
     return out_dir, cmd
 
 
+def _published_metrics_dir(job_name: str) -> Path:
+    """Where a job's results land after a prior run's publish_results() push.
+
+    REPO_ROOT is the git checkout kaggle_github_loop.py freshly clones/pulls
+    on every session start (ensure_repo(), before control/main.py even runs),
+    so this path is populated with whatever is currently on GitHub regardless
+    of whether this is a continuing session or a brand new one.
+    """
+    return REPO_ROOT / "kaggle_results" / "latest" / "colab_results" / job_name
+
+
 def execute(job_name: str, out_dir: Path, cmd: list[str], timeout: int = 28800) -> bool:
+    # Ephemeral check: this session already ran it (survives only within one
+    # continuous Kaggle kernel -- /kaggle/working is wiped on session restart).
     if out_dir.exists() and any(out_dir.glob("*metrics.csv")):
-        log(f"[skip] {job_name} already has metrics")
+        log(f"[skip] {job_name} already has metrics (this session)")
+        return True
+    # Persisted check: a PRIOR session already ran it and pushed the result to
+    # GitHub. This survives a session restart, since ensure_repo() re-clones
+    # the current GitHub state fresh before control/main.py runs. Without this,
+    # a restarted Kaggle session would silently redo every already-successful
+    # job in the stage (e.g. Falcon3's 3 seeds while only Phi was fixed).
+    published = _published_metrics_dir(job_name)
+    if published.exists() and any(published.glob("*metrics.csv")):
+        log(f"[skip] {job_name} already has metrics (published to GitHub by a prior run)")
         return True
     out_dir.mkdir(parents=True, exist_ok=True)
     return run(cmd, cwd=WORK_ROOT, timeout=timeout, check=False) == 0
