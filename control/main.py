@@ -305,6 +305,15 @@ def prepare_project() -> None:
     # enough to still expose seen_tokens. An exact pin so it downgrades the
     # Kaggle base image if that ships something newer.
     run([sys.executable, "-m", "pip", "install", "-q", "transformers==4.44.2"], cwd=WORK_ROOT, timeout=600, check=False)
+    # The transformers pin above drags tokenizers back down with it (pip
+    # resolves it to satisfy 4.44.2's bounds), which then can't parse
+    # Falcon3-3B's tokenizer.json ("data did not match any variant of
+    # untagged enum ModelWrapper" -- a newer serialization format than the
+    # downgraded tokenizers Rust core understands). Force it back up
+    # separately: the stable Python API transformers 4.44.2 relies on
+    # (TokenizerFast.from_file, encode/decode) hasn't changed, so a newer
+    # tokenizers is safe here even paired with the older transformers pin.
+    run([sys.executable, "-m", "pip", "install", "-q", "-U", "tokenizers"], cwd=WORK_ROOT, timeout=300, check=False)
 
 
 def apply_overlay() -> None:
