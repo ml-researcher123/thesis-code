@@ -309,11 +309,18 @@ def prepare_project() -> None:
     # resolves it to satisfy 4.44.2's bounds), which then can't parse
     # Falcon3-3B's tokenizer.json ("data did not match any variant of
     # untagged enum ModelWrapper" -- a newer serialization format than the
-    # downgraded tokenizers Rust core understands). Force it back up
-    # separately: the stable Python API transformers 4.44.2 relies on
-    # (TokenizerFast.from_file, encode/decode) hasn't changed, so a newer
-    # tokenizers is safe here even paired with the older transformers pin.
-    run([sys.executable, "-m", "pip", "install", "-q", "-U", "tokenizers"], cwd=WORK_ROOT, timeout=300, check=False)
+    # downgraded tokenizers Rust core understands). A plain `-U` here is a
+    # no-op: pip's resolver sees transformers==4.44.2 declares an upper bound
+    # on tokenizers and refuses to install past it (confirmed -- the identical
+    # error recurred with this exact line in place). --no-deps bypasses that
+    # declared-constraint check entirely and force-installs latest regardless.
+    # Safe because the stable Python API transformers 4.44.2 relies on
+    # (TokenizerFast.from_file, encode/decode) hasn't changed across
+    # tokenizers releases.
+    run([sys.executable, "-m", "pip", "install", "-q", "-U", "--no-deps", "tokenizers"], cwd=WORK_ROOT, timeout=300, check=False)
+    # Verify what actually landed, so a repeat failure is diagnosable from the
+    # log instead of guessed at a third time.
+    run([sys.executable, "-c", "import tokenizers, transformers; print(f'[versions] tokenizers={tokenizers.__version__} transformers={transformers.__version__}')"], cwd=WORK_ROOT, timeout=60, check=False)
 
 
 def apply_overlay() -> None:
