@@ -8,20 +8,40 @@ from .schema import RetrievalRun
 from .text import lexical_overlap
 
 
-def _patch_dynamic_cache_seen_tokens() -> None:
-    """Restore DynamicCache.seen_tokens for readers whose bundled remote code
-    still expects it (e.g. Phi-3.5-mini's modeling_phi3.py).
+def _patch_dynamic_cache_legacy_api() -> None:
+    """Restore DynamicCache's pre-refactor Cache API for readers whose bundled
+    remote code still calls it (e.g. Phi-3.5-mini's modeling_phi3.py).
 
-    seen_tokens was deprecated in transformers 4.41 and later removed;
-    get_seq_length() is the current replacement. Pinning transformers to an
-    old-enough version to keep seen_tokens turned out to be unsatisfiable --
-    old transformers hard-requires an old tokenizers at import time, which
-    can't parse newer models' tokenizer.json (e.g. Falcon3-3B). Patching the
-    class here instead lets the environment run whatever recent,
-    mutually-compatible transformers+tokenizers versions it naturally
+    Pinning transformers to an old-enough version to keep this API turned out
+    to be unsatisfiable -- old transformers hard-requires an old tokenizers at
+    import time, which can't parse newer models' tokenizer.json (e.g.
+    Falcon3-3B). Patching the class here instead lets the environment run
+    whatever recent, mutually-compatible transformers+tokenizers it naturally
     resolves to (the same combination already proven stable for Qwen2.5 in
-    Stages 8-11), while giving Phi's outdated code the attribute it wants.
-    Idempotent and a no-op on any version where seen_tokens still exists.
+    Stages 8-11 and for Falcon3-3B in Stage 12), while giving Phi's outdated
+    code the attributes/methods it wants. Idempotent; each shim is a no-op on
+    any version where the attribute already exists natively.
+
+    Read Phi-3.5-mini's actual bundled modeling_phi3.py (revision
+    2fe192450127e6a83f7441aef6e3ca586c338b77) to enumerate every legacy call
+    site rather than patch one crash at a time:
+      - Phi3Attention/FlashAttention2/SdpaAttention.forward():
+        ``past_key_value.get_usable_length(new_seq_length, layer_idx)``
+      - Phi3Model.forward(): ``past_key_values.get_usable_length(seq_length)``
+      - Phi3ForCausalLM.prepare_inputs_for_generation():
+        ``get_seq_length()`` (still exists natively, no shim needed),
+        ``.seen_tokens``, ``get_max_length()``
+
+    get_usable_length: in the pre-refactor API this returned how many cached
+    tokens are usable, accounting for any windowing/max-size limit. DynamicCache
+    is unbounded (no window), so its usable length is just its current length
+    -- delegate to get_seq_length(layer_idx).
+
+    get_max_length: in the pre-refactor API this returned the cache's
+    configured maximum size, or None if unbounded. DynamicCache is unbounded,
+    so the faithful value is always None (Phi's code only uses it to
+    conditionally truncate the attention mask when a max IS set: `if
+    max_cache_length is not None and ...`; None correctly skips that branch).
     """
     try:
         from transformers import DynamicCache
@@ -29,6 +49,10 @@ def _patch_dynamic_cache_seen_tokens() -> None:
         return
     if not hasattr(DynamicCache, "seen_tokens"):
         DynamicCache.seen_tokens = property(lambda self: self.get_seq_length())
+    if not hasattr(DynamicCache, "get_usable_length"):
+        DynamicCache.get_usable_length = lambda self, new_seq_length=0, layer_idx=0: self.get_seq_length(layer_idx)
+    if not hasattr(DynamicCache, "get_max_length"):
+        DynamicCache.get_max_length = lambda self: None
 
 
 @dataclass
@@ -79,7 +103,7 @@ class HuggingFaceGenerator:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        _patch_dynamic_cache_seen_tokens()
+        _patch_dynamic_cache_legacy_api()
 
         self.model_name = model_name
         self.device = device
