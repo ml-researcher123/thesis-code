@@ -22,7 +22,7 @@ Stage plan (ordered by how much each lifts the paper):
 
   stage12-cross-family   [RUN FIRST] The headline packer win currently rests on
                          a single reader family (Qwen2.5-3B). Replicates the
-                         budget-160 HotpotQA factorial on Llama-3.2-3B and
+                         budget-160 HotpotQA factorial on Falcon3-3B and
                          Phi-3.5-mini, 3 seeds each. If +0.022 holds across
                          families, the positive claim stops being "a Qwen
                          quirk" and becomes cross-family.
@@ -89,10 +89,12 @@ SEEDS_3 = [42, 13, 7]
 # --- stage 12: cross-family reader replication -----------------------------
 # Two non-Qwen families at the same ~3B scale as the headline result, fp16
 # (3B-class fits a single T4, so this matches the published 3B fp16 setup
-# exactly and no quantization control is needed).
+# exactly and no quantization control is needed). Both are ungated (Apache-2.0 /
+# open), so no HF_TOKEN or licence acceptance is required -- Falcon3 replaces the
+# gated Llama-3.2 to remove that setup friction.
 # (label, model, batch_size, gated)
 CROSS_FAMILY_READERS = [
-    ("llama3b", "meta-llama/Llama-3.2-3B-Instruct", 2, True),
+    ("falcon3b", "tiiuae/Falcon3-3B-Instruct", 2, False),
     ("phi35mini", "microsoft/Phi-3.5-mini-instruct", 2, False),
 ]
 
