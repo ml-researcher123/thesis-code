@@ -108,6 +108,17 @@ def parse_args() -> argparse.Namespace:
                              "diagnostic is degenerate.")
     parser.add_argument("--nli-model", default="cross-encoder/nli-deberta-v3-small")
     parser.add_argument("--nli-batch-size", type=int, default=32)
+    parser.add_argument("--compression-baseline", action="store_true",
+                        help="Add a LLMLingua-2 compression policy (chunk_llmlingua) fed the same "
+                             "candidate pool and budget as the packers, for a head-to-head against "
+                             "the compression line the paper cites (RECOMP/LLMLingua).")
+    parser.add_argument("--compression-model",
+                        default="microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
+                        help="LLMLingua-2 checkpoint. Switch to the bert-base multilingual variant "
+                             "if it OOMs alongside the reader on a small GPU.")
+    parser.add_argument("--lean-policies", action="store_true",
+                        help="Restrict the factorial to chunk packed/focused/submod (drop ACE and "
+                             "MMR) to save reader time when only the compression head-to-head matters.")
     parser.add_argument("--out-dir", default="cloud_results")
     return parser.parse_args()
 
@@ -154,7 +165,7 @@ def load_from_args(args: argparse.Namespace) -> CorpusDataset:
 def build_policies(args: argparse.Namespace) -> list[dict[str, Any]]:
     b = args.budget
     ace_prefix = "ace_bridge" if args.ace_retriever == "bridge" else "ace"
-    return [
+    policies = [
         {"name": f"chunk_packed_{b}", "base": "chunk", "representation": "chunk", "packer": "packed", "mode": "packed_snippets"},
         {"name": f"chunk_focused_{b}", "base": "chunk", "representation": "chunk", "packer": "focused", "mode": "focused_packed"},
         {"name": f"chunk_mmr_{b}", "base": "chunk", "representation": "chunk", "packer": "mmr", "mode": "mmr"},
@@ -163,6 +174,14 @@ def build_policies(args: argparse.Namespace) -> list[dict[str, Any]]:
         {"name": f"{ace_prefix}_mmr_{b}", "base": "ace", "representation": "ace", "packer": "mmr", "mode": "mmr"},
         {"name": f"{ace_prefix}_submod_{b}", "base": "ace", "representation": "ace", "packer": "submod", "mode": "submodular"},
     ]
+    if args.lean_policies:
+        # Keep only the chunk packed/focused/submod contrast the head-to-head needs.
+        policies = [p for p in policies if p["base"] == "chunk" and p["packer"] in ("packed", "focused", "submod")]
+    if args.compression_baseline:
+        policies.append(
+            {"name": f"chunk_llmlingua_{b}", "base": "chunk", "representation": "chunk", "packer": "llmlingua", "mode": "compress"}
+        )
+    return policies
 
 
 def materialize_policy(
@@ -198,6 +217,21 @@ def materialize_policy(
                 token_budget=args.budget,
                 mmr_lambda=args.mmr_lambda,
                 max_candidates=args.submod_max_candidates,
+            )
+            for run in base_runs
+        ]
+    if policy["mode"] == "compress":
+        from ace_rag.compressors import compress_llmlingua_run
+
+        return [
+            compress_llmlingua_run(
+                dataset,
+                run,
+                token_budget=args.budget,
+                snippet_window=args.snippet_window,
+                max_snippet_tokens=args.max_snippet_tokens,
+                max_candidates=args.submod_max_candidates,
+                model_name=args.compression_model,
             )
             for run in base_runs
         ]
