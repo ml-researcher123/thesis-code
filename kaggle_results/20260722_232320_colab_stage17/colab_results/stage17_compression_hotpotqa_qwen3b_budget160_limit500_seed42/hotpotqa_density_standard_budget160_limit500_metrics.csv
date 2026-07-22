@@ -1,0 +1,6 @@
+policy,router_type,representation,packer,reader_model,packed_token_budget,recall@1,all_gold@1,recall@2,all_gold@2,recall@5,all_gold@5,qwen_em,qwen_f1,avg_reader_evidence_tokens,mean_ans_in_context,mean_ans_in_context_soft,mean_gold_token_density,mean_gold_doc_reader_cov,mean_all_gold_reader,mean_distractor_docs,mean_context_tokens,mean_n_snippets,selection_counts
+chunk_packed_160,fixed,chunk,packed,Qwen/Qwen2.5-3B-Instruct,160,0.438,0.0,0.723,0.498,0.874,0.758,0.316,0.4007,151.31,0.59,0.6674,0.4001,0.685,0.448,2.006,151.314,3.484,
+chunk_focused_160,fixed,chunk,focused,Qwen/Qwen2.5-3B-Instruct,160,0.438,0.0,0.723,0.498,0.874,0.758,0.322,0.4124,152.28,0.632,0.7033,0.5094,0.733,0.512,1.596,152.282,3.318,
+chunk_submod_160,fixed,chunk,submod,Qwen/Qwen2.5-3B-Instruct,160,0.438,0.0,0.723,0.498,0.874,0.758,0.37,0.4477,145.4,0.64,0.7088,0.4574,0.779,0.578,2.204,145.398,4.616,
+chunk_llmlingua_160,fixed,chunk,llmlingua,Qwen/Qwen2.5-3B-Instruct,160,0.438,0.0,0.723,0.498,0.874,0.758,0.244,0.3295,129.45,0.4,0.5498,0.0,0.0,0.0,0.0,129.448,1.0,
+router_oracle_packer,oracle,mixed,oracle,Qwen/Qwen2.5-3B-Instruct,160,,,,,,,0.452,0.5567,133.53,0.58,0.6772,0.2319,0.348,0.266,0.764,133.534,2.298,"{""chunk_focused_160"": 65, ""chunk_llmlingua_160"": 280, ""chunk_submod_160"": 155}"
