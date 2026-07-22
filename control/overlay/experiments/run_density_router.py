@@ -218,15 +218,29 @@ def generate(reader: Any, backend: str, reader_runs: list[RetrievalRun]) -> list
     return [reader.answer(run.query, run) for run in reader_runs]
 
 
-def nli_hypothesis(answer: str) -> str:
-    """Render a gold answer as an NLI hypothesis.
+def nli_hypothesis(question: str, answer: str) -> str:
+    """Render a (question, gold answer) pair as an NLI hypothesis.
 
-    Short spans ("Paris") are not propositions, so they are wrapped into a
-    claim the premise can entail. Long free-form answers (ExpertQA) already are
-    claims and are used verbatim.
+    Stage-15 exposed why the first version under-fired badly (HotpotQA NLI-AiC
+    0.055 despite the answer being verbatim-present 64% of the time): the
+    hypothesis was a bare ``"The answer is X."`` with no question anchor, so
+    evidence text almost never *entails* it -- "Nolan was born in London" does
+    not entail the free-floating claim "The answer is London" because nothing
+    ties London to being *the answer* to anything. The label index was fine
+    (entailment=1, correctly resolved); the framing was the bug.
+
+    Fix: fold the question into a full proposition the context can actually
+    entail. For a short span we build "The answer to the question '<q>' is
+    <a>."; a context that supports the answer now entails this. Long free-form
+    answers (RAGBench ExpertQA) are already standalone claims and are used
+    verbatim. (A learned question-to-declarative model would read even more
+    naturally; this template is the lightweight version.)
     """
     answer = answer.strip()
+    question = " ".join(question.split()).strip()
     if len(answer.split()) <= 8:
+        if question:
+            return f'The answer to the question "{question}" is {answer}.'
         return f"The answer is {answer}."
     return answer
 
@@ -342,7 +356,7 @@ def main() -> None:
             cq = context_quality(run, q)
             base_recall, base_all_gold = base_metrics_by_rep[rep].get(run.qid, (0.0, 0.0))
             if args.semantic_aic and q.answers:
-                nli_jobs.append((len(per_question_rows), context_text(run), nli_hypothesis(q.answers[0])))
+                nli_jobs.append((len(per_question_rows), context_text(run), nli_hypothesis(run.query, q.answers[0])))
             per_question_rows.append(
                 {
                     "qid": run.qid,
