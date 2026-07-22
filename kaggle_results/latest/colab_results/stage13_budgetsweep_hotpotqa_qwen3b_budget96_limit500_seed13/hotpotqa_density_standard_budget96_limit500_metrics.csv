@@ -1,9 +1,0 @@
-policy,router_type,representation,packer,reader_model,packed_token_budget,recall@1,all_gold@1,recall@2,all_gold@2,recall@5,all_gold@5,qwen_em,qwen_f1,avg_reader_evidence_tokens,mean_ans_in_context,mean_ans_in_context_soft,mean_gold_token_density,mean_gold_doc_reader_cov,mean_all_gold_reader,mean_distractor_docs,mean_context_tokens,mean_n_snippets,selection_counts
-chunk_packed_96,fixed,chunk,packed,Qwen/Qwen2.5-3B-Instruct,96,0.437,0.0,0.718,0.496,0.875,0.762,0.26,0.3541,86.58,0.45,0.5294,0.4629,0.494,0.222,1.218,86.58,2.242,
-chunk_focused_96,fixed,chunk,focused,Qwen/Qwen2.5-3B-Instruct,96,0.437,0.0,0.718,0.496,0.875,0.762,0.296,0.4004,86.84,0.518,0.5983,0.6565,0.585,0.278,0.802,86.838,2.082,
-chunk_mmr_96,fixed,chunk,mmr,Qwen/Qwen2.5-3B-Instruct,96,0.437,0.0,0.718,0.496,0.875,0.762,0.274,0.3749,87.15,0.478,0.5564,0.6033,0.545,0.226,0.886,87.148,2.148,
-chunk_submod_96,fixed,chunk,submod,Qwen/Qwen2.5-3B-Instruct,96,0.437,0.0,0.718,0.496,0.875,0.762,0.278,0.3613,83.15,0.488,0.5712,0.5288,0.613,0.33,1.342,83.154,2.892,
-ace_focused_96,fixed,ace,focused,Qwen/Qwen2.5-3B-Instruct,96,0.409,0.0,0.665,0.406,0.847,0.718,0.284,0.3796,86.09,0.494,0.582,0.5569,0.605,0.322,1.176,86.086,2.498,
-ace_mmr_96,fixed,ace,mmr,Qwen/Qwen2.5-3B-Instruct,96,0.409,0.0,0.665,0.406,0.847,0.718,0.256,0.3464,86.47,0.458,0.5438,0.4958,0.554,0.268,1.31,86.472,2.58,
-ace_submod_96,fixed,ace,submod,Qwen/Qwen2.5-3B-Instruct,96,0.409,0.0,0.665,0.406,0.847,0.718,0.25,0.3419,84.18,0.458,0.5467,0.4822,0.577,0.276,1.496,84.184,2.958,
-router_oracle_packer,oracle,mixed,oracle,Qwen/Qwen2.5-3B-Instruct,96,,,,,,,0.444,0.5648,79.82,0.6,0.6718,0.6135,0.604,0.306,1.01,79.82,2.432,"{""ace_focused_96"": 85, ""ace_mmr_96"": 33, ""ace_submod_96"": 63, ""chunk_focused_96"": 147, ""chunk_mmr_96"": 21, ""chunk_submod_96"": 151}"
